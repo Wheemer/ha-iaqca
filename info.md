@@ -9,7 +9,6 @@
 
 [![HACS Custom](https://img.shields.io/badge/HACS-CUSTOM-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://hacs.xyz/)
 [![Home Assistant 2024.11+](https://img.shields.io/badge/HOME%20ASSISTANT-2024.11%2B-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://www.home-assistant.io/)
-[![Upstream](https://img.shields.io/badge/UPSTREAM-Limych%2Fha--iaquk-555555?style=for-the-badge&logo=github&logoColor=white&labelColor=555555)](https://github.com/Limych/ha-iaquk)
 
 <p>
   <strong>IAQCA keeps the familiar 1-65 Home Assistant air-quality score while using Canadian residential guidance where available.</strong>
