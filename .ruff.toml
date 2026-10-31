@@ -4,9 +4,21 @@ target-version = "py312"
 
 [lint]
 select = [
-    "ALL",
+    "E",
+    "F",
+    "PGH004",
+    "PLC0414",
+    "SIM105",
+    "SIM117",
+    "SIM300",
+    "SIM401",
+    "T20",
+    "TRY004",
+    "UP",
+    "W",
 ]
 ignore = [
+    "E501", # Line length is not enforced by this project.
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
     "D203", # no-blank-line-before-class (incompatible with formatter)
     "D212", # multi-line-summary-first-line (incompatible with formatter)
@@ -21,9 +33,6 @@ fixture-parentheses = false
 
 [lint.pyupgrade]
 keep-runtime-typing = true
-
-[lint.mccabe]
-max-complexity = 25
 
 [lint.per-file-ignores]
 "**/tests/**.py" = [

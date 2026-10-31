@@ -32,7 +32,6 @@ from homeassistant.core import (
     State,
     callback,
 )
-from homeassistant.helpers import discovery
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.unit_conversion import TemperatureConverter
