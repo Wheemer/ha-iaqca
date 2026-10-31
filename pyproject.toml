@@ -168,6 +168,7 @@ asyncio_mode = "auto"
 [tool.ruff]
 target-version = "py312"
 
+[tool.ruff.lint]
 select = [
     "C",  # complexity
     "D",  # docstrings

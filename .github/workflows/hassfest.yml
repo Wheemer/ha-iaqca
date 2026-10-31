@@ -2,6 +2,7 @@ name: Validate with hassfest
 
 on:
   push:
+    branches: [dev]
   pull_request:
   schedule:
     - cron: "0 0 * * mon"
