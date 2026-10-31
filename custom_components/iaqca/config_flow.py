@@ -30,11 +30,15 @@ def _serialize_sources(sources: dict[str, str | list[str]]) -> dict[str, str]:
     """Serialize sources for display in forms."""
     serialized: dict[str, str] = {}
     for source, entity_id in sources.items():
-        serialized[source] = ", ".join(entity_id) if isinstance(entity_id, list) else entity_id
+        serialized[source] = (
+            ", ".join(entity_id) if isinstance(entity_id, list) else entity_id
+        )
     return serialized
 
 
-def _parse_user_input(user_input: dict[str, Any]) -> tuple[dict[str, Any], dict[str, str]]:
+def _parse_user_input(
+    user_input: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, str]]:
     """Validate form input and return config-entry data plus field errors."""
     errors: dict[str, str] = {}
     sources: dict[str, str | list[str]] = {}
@@ -110,9 +114,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 2
 
-    async def async_step_import(
-        self, user_input: dict[str, Any]
-    ) -> FlowResult:
+    async def async_step_import(self, user_input: dict[str, Any]) -> FlowResult:
         """Import legacy YAML configuration into a config entry."""
         if CONF_SOURCES in user_input:
             form_input = {
