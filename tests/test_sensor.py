@@ -62,10 +62,9 @@ async def test_entity_initialization(hass: HomeAssistant):
     assert entity.should_poll is False
     assert entity.available is True
     assert entity.device_class == SensorDeviceClass.AQI
-    assert entity.state is None
+    assert entity.native_value is None
     assert entity.state_class == SensorStateClass.MEASUREMENT
     assert entity.icon == ICON_DEFAULT
-    assert entity.unit_of_measurement is None
     assert entity.extra_state_attributes == expected_attributes
 
     entity = IaqcaSensor(controller, SENSOR_LEVEL)
@@ -76,10 +75,9 @@ async def test_entity_initialization(hass: HomeAssistant):
     assert entity.should_poll is False
     assert entity.available is True
     assert entity.device_class == "iaqca__level"
-    assert entity.state is None
+    assert entity.native_value is None
     assert entity.state_class is None
     assert entity.icon == ICON_FAIR
-    assert entity.unit_of_measurement is None
     assert entity.extra_state_attributes == expected_attributes
 
     levels = {
@@ -99,7 +97,7 @@ async def test_entity_initialization(hass: HomeAssistant):
             entity.hass = hass
             await entity.async_update()
 
-            assert entity.state == lvl
+            assert entity.native_value == lvl
             assert entity.icon == icon
 
 
