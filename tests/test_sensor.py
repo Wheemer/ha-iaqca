@@ -74,7 +74,7 @@ async def test_entity_initialization(hass: HomeAssistant):
     assert entity.name == "Canadian Air Quality Level"
     assert entity.should_poll is False
     assert entity.available is True
-    assert entity.device_class == "iaqca__level"
+    assert entity.device_class == SensorDeviceClass.ENUM
     assert entity.native_value is None
     assert entity.state_class is None
     assert entity.icon == ICON_FAIR
