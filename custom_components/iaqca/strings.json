@@ -94,14 +94,7 @@
         "name": "Canadian Air Quality Index"
       },
       "iaq_level": {
-        "name": "Canadian Air Quality Level",
-        "state": {
-          "Inadequate": "Inadequate",
-          "Poor": "Poor",
-          "Fair": "Fair",
-          "Good": "Good",
-          "Excellent": "Excellent"
-        }
+        "name": "Canadian Air Quality Level"
       }
     }
   }
