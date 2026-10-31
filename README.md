@@ -4,6 +4,8 @@
 
 ### A simple Canadian-guidance-based indoor air quality integration for Home Assistant
 
+<img src="logo.png" alt="Canadian Air Quality Index logo" width="200">
+
 [![HACS Custom](https://img.shields.io/badge/HACS-CUSTOM-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://hacs.xyz/)
 [![Home Assistant 2024.11+](https://img.shields.io/badge/HOME%20ASSISTANT-2024.11%2B-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://www.home-assistant.io/)
 [![Upstream](https://img.shields.io/badge/UPSTREAM-Limych%2Fha--iaquk-555555?style=for-the-badge&logo=github&logoColor=white&labelColor=555555)](https://github.com/Limych/ha-iaquk)
