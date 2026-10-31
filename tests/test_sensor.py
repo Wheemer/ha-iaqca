@@ -9,6 +9,12 @@ from pytest_homeassistant_custom_component.common import assert_setup_component
 
 from custom_components.iaqca import IaqcaController
 from custom_components.iaqca.const import (
+    ATTR_ADVISORY_PROFILE,
+    ATTR_CALCULATION_SUMMARY,
+    ATTR_SCORING_PROFILE,
+    ATTR_SOURCES_SET,
+    ATTR_SOURCES_USED,
+    ATTR_UNAVAILABLE_SOURCES,
     DOMAIN,
     ICON_DEFAULT,
     ICON_EXCELLENT,
@@ -28,13 +34,31 @@ from custom_components.iaqca.sensor import SENSOR_INDEX, SENSOR_LEVEL, IaqcaSens
 async def test_entity_initialization(hass: HomeAssistant):
     """Test sensor initialization."""
     controller = IaqcaController(hass, "test", "Test", {"": "sensor.test_monitored"})
-    expected_attributes = {"sources_set": 1, "sources_used": 0}
+    expected_attributes = {
+        ATTR_ADVISORY_PROFILE: "simple_canadian_guidance_with_operational_signals",
+        ATTR_SCORING_PROFILE: "iaqca_simple_canadian_guidance_1_to_65",
+        ATTR_SOURCES_SET: 1,
+        ATTR_SOURCES_USED: 0,
+        ATTR_UNAVAILABLE_SOURCES: [""],
+        ATTR_CALCULATION_SUMMARY: {
+            "index": None,
+            "level": None,
+            "advisory_status": None,
+            "sources_set": 1,
+            "sources_used": 0,
+            "source_coverage": 0,
+            "available_sources": [],
+            "unavailable_sources": [""],
+            "worst_source_index": None,
+            "worst_sources": [],
+        },
+    }
 
     entity = IaqcaSensor(controller, SENSOR_INDEX)
     entity.hass = hass
 
     assert entity.unique_id == "test_iaq_index"
-    assert entity.name == "Test Canadian Air Quality Index"
+    assert entity.name == "Canadian Air Quality Index"
     assert entity.should_poll is True
     assert entity.available is True
     assert entity.device_class == SensorDeviceClass.AQI
@@ -48,7 +72,7 @@ async def test_entity_initialization(hass: HomeAssistant):
     entity.hass = hass
 
     assert entity.unique_id == "test_iaq_level"
-    assert entity.name == "Test Canadian Air Quality Level"
+    assert entity.name == "Canadian Air Quality Level"
     assert entity.should_poll is True
     assert entity.available is True
     assert entity.device_class == "iaqca__level"

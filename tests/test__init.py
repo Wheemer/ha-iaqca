@@ -45,32 +45,42 @@ from custom_components.iaqca import (
     _deslugify,
     check_voc_keys,
 )
-from custom_components.iaqca.const import UNIT_MGM3, UNIT_PPB, UNIT_UGM3
+from custom_components.iaqca.const import (
+    ATTR_ADVISORY_PROFILE,
+    ATTR_CALCULATION_SUMMARY,
+    ATTR_SCORING_PROFILE,
+    ATTR_UNAVAILABLE_SOURCES,
+    UNIT_MGM3,
+    UNIT_PPB,
+    UNIT_UGM3,
+)
 
 
 async def async_mock_sensors(hass: HomeAssistant):
     """Mock sensor entity for tests."""
-    assert await async_setup_component(
-        hass,
-        "sensor",
-        {
-            "sensor": {
-                "platform": "template",
-                "sensors": {
-                    "test_monitored": {
-                        "value_template": "{{ 29.82 }}",
-                    },
-                    "test_monitored2": {
-                        "value_template": "{{ 29.82 }}",
-                    },
-                    "test_monitored3": {
-                        "value_template": "{{ 29.82 }}",
-                    },
-                },
-            }
-        },
-    )
+    for entity_id in (
+        "sensor.test_monitored",
+        "sensor.test_monitored2",
+        "sensor.test_monitored3",
+    ):
+        hass.states.async_set(entity_id, 29.82)
     await hass.async_block_till_done()
+
+
+def assert_source_attributes(actual: dict, expected: dict) -> None:
+    """Assert stable calculation attributes while allowing diagnostic detail."""
+    for key, value in expected.items():
+        assert actual[key] == value
+
+    assert (
+        actual[ATTR_ADVISORY_PROFILE]
+        == "simple_canadian_guidance_with_operational_signals"
+    )
+    assert actual[ATTR_SCORING_PROFILE] == "iaqca_simple_canadian_guidance_1_to_65"
+    assert actual[ATTR_CALCULATION_SUMMARY]["sources_set"] == expected[ATTR_SOURCES_SET]
+    assert (
+        actual[ATTR_CALCULATION_SUMMARY]["sources_used"] == expected[ATTR_SOURCES_USED]
+    )
 
 
 async def test_check_voc_keys():
@@ -120,15 +130,30 @@ async def test_controller_init(hass: HomeAssistant):
     controller = IaqcaController(hass, "test", "Test", {"": "sensor.test_monitored"})
 
     expected_attributes = {
+        ATTR_ADVISORY_PROFILE: "simple_canadian_guidance_with_operational_signals",
+        ATTR_SCORING_PROFILE: "iaqca_simple_canadian_guidance_1_to_65",
         ATTR_SOURCES_SET: 1,
         ATTR_SOURCES_USED: 0,
+        ATTR_UNAVAILABLE_SOURCES: [""],
+        ATTR_CALCULATION_SUMMARY: {
+            "index": None,
+            "level": None,
+            "advisory_status": None,
+            "sources_set": 1,
+            "sources_used": 0,
+            "source_coverage": 0,
+            "available_sources": [],
+            "unavailable_sources": [""],
+            "worst_source_index": None,
+            "worst_sources": [],
+        },
     }
 
     assert controller.unique_id == "test"
     assert controller.name == "Test"
     assert controller.iaq_index is None
     assert controller.iaq_level is None
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
 
 async def test_update(hass: HomeAssistant):
@@ -155,12 +180,12 @@ async def test_update(hass: HomeAssistant):
         ATTR_SOURCES_USED: 3,
         ATTR_SOURCE_INDEX_TPL.format("temperature"): 4,
         ATTR_SOURCE_INDEX_TPL.format("humidity"): 5,
-        ATTR_SOURCE_INDEX_TPL.format("co2"): 4,
+        ATTR_SOURCE_INDEX_TPL.format("co2"): 3,
     }
 
-    assert controller.iaq_index == 56
+    assert controller.iaq_index == 52
     assert controller.iaq_level == LEVEL_GOOD
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
     config = {
         CONF_TEMPERATURE: entity_id,
@@ -181,7 +206,7 @@ async def test_update(hass: HomeAssistant):
 
     assert controller.iaq_index == 65
     assert controller.iaq_level == LEVEL_EXCELLENT
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
     hass.states.async_set(
         entity_id, 16, {ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS}
@@ -191,7 +216,7 @@ async def test_update(hass: HomeAssistant):
 
     assert controller.iaq_index == 39
     assert controller.iaq_level == LEVEL_FAIR
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
     hass.states.async_set(
         entity_id, 15, {ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS}
@@ -201,7 +226,7 @@ async def test_update(hass: HomeAssistant):
 
     assert controller.iaq_index == 26
     assert controller.iaq_level == LEVEL_POOR
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
     hass.states.async_set(
         entity_id, 14, {ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS}
@@ -211,7 +236,7 @@ async def test_update(hass: HomeAssistant):
 
     assert controller.iaq_index == 13
     assert controller.iaq_level == LEVEL_INADEQUATE
-    assert controller.state_attributes == expected_attributes
+    assert_source_attributes(controller.state_attributes, expected_attributes)
 
 
 async def test__has_state():
@@ -377,11 +402,7 @@ async def test__co2_index(hass: HomeAssistant):
 
     controller = IaqcaController(hass, "test", "Test", {CONF_CO2: entity_id})
 
-    for i, value in enumerate([1801, 1800, 1500, 800, 599]):
-        hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "ppm"})
-        assert controller._co2_index == i + 1
-
-    for i, value in enumerate([1801, 1501, 801, 600, 599]):
+    for i, value in enumerate([1801, 1800, 1000, 750, 500]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "ppm"})
         assert controller._co2_index == i + 1
 
@@ -487,12 +508,9 @@ async def test__no2_index(hass: HomeAssistant):
 
     controller = IaqcaController(hass, "test", "Test", {CONF_NO2: entity_id})
 
-    for i, value in enumerate([0.41, 0.4, 0.19]):
+    for i, value in enumerate([0.171, 0.17, 0.095, 0.02, 0.01]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
-        assert controller._no2_index == i * 2 + 1
-
-    hass.states.async_set(entity_id, 0.2, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
-    assert controller._no2_index == 3
+        assert controller._no2_index == i + 1
 
 
 async def test__co_index(hass: HomeAssistant):
@@ -511,12 +529,9 @@ async def test__co_index(hass: HomeAssistant):
 
     controller = IaqcaController(hass, "test", "Test", {CONF_CO: entity_id})
 
-    for i, value in enumerate([7.1, 7, 0]):
+    for i, value in enumerate([28.7, 28.6, 20.05, 11.5, 5.75]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
-        assert controller._co_index == i * 2 + 1
-
-    hass.states.async_set(entity_id, 0.1, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
-    assert controller._co_index == 3
+        assert controller._co_index == i + 1
 
 
 async def test__hcho_index(hass: HomeAssistant):
@@ -537,11 +552,7 @@ async def test__hcho_index(hass: HomeAssistant):
 
     controller = IaqcaController(hass, "test", "Test", {CONF_HCHO: entity_id})
 
-    for i, value in enumerate([0.201, 0.20, 0.10, 0.05, 0.019]):
-        hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
-        assert controller._hcho_index == i + 1
-
-    for i, value in enumerate([0.201, 0.101, 0.051, 0.02, 0.019]):
+    for i, value in enumerate([0.124, 0.123, 0.0865, 0.05, 0.025]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
         assert controller._hcho_index == i + 1
 
@@ -567,20 +578,17 @@ async def test__radon_index(hass: HomeAssistant):
 
     controller = IaqcaController(hass, "test", "Test", {CONF_RADON: entity_id})
 
-    hass.states.async_set(entity_id, 101, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
+    hass.states.async_set(entity_id, 401, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
     assert controller._radon_index == 1
 
+    hass.states.async_set(entity_id, 400, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
+    assert controller._radon_index == 2
+
+    hass.states.async_set(entity_id, 200, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
+    assert controller._radon_index == 3
+
     hass.states.async_set(entity_id, 100, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
-    assert controller._radon_index == 2
+    assert controller._radon_index == 4
 
-    hass.states.async_set(entity_id, 20, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
-    assert controller._radon_index == 2
-
-    hass.states.async_set(entity_id, 19, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
-    assert controller._radon_index == 3
-
-    hass.states.async_set(entity_id, 1, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
-    assert controller._radon_index == 3
-
-    hass.states.async_set(entity_id, 0, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
+    hass.states.async_set(entity_id, 50, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
     assert controller._radon_index == 5
