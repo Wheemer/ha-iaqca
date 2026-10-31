@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: "23 3 * * 1"
 
+concurrency:
+  group: "python-testing-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   ruff:
     name: "Ruff"
