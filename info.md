@@ -103,6 +103,13 @@ IAQCA intentionally stays lightweight. It uses the configured sensor states dire
 - PM2.5 and VOC readings remain useful operational signals for cooking, smoke, ventilation, and source events.
 - The score is suitable for Home Assistant automations, but it is not a health diagnosis or regulatory compliance determination.
 
+## Guidance References
+
+IAQCA's simple profile is informed by Health Canada's residential indoor-air guidance:
+
+- [Residential Indoor Air Quality Guidelines](https://www.canada.ca/en/health-canada/services/air-quality/residential-indoor-air-quality-guidelines.html)
+- [Improve indoor air quality in your home](https://www.canada.ca/en/health-canada/services/air-quality/improve-indoor-air-quality-in-your-home.html)
+
 ## Troubleshooting
 
 Enable integration debug logging:
