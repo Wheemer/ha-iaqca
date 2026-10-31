@@ -28,7 +28,7 @@ jobs:
             cache: "pip"
 
         - name: "Cache pip"
-          uses: actions/cache@v4
+          uses: actions/cache@v6
           with:
             # This path is specific to Ubuntu
             path: ~/.cache/pip
@@ -64,7 +64,7 @@ jobs:
           cache: "pip"
 
       - name: "Cache pip"
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           # This path is specific to Ubuntu
           path: ~/.cache/pip
