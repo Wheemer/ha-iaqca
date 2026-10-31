@@ -4,6 +4,7 @@ name: "Python testing"
 on:
   push:
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: "23 3 * * 1"
 
@@ -109,3 +110,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: coveralls --service=github
+
+  typecheck:
+    name: "Type check"
+    needs: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: 'pyproject.toml'
+          cache: "pip"
+
+      - name: "Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          scripts/install_requirements requirements-test.txt "${{ secrets.ADMIN_GITHUB_TOKEN }}"
+          if [ -d custom_components ]; then
+            echo '"""Stub."""' >custom_components/__init__.py
+          fi
+
+      - name: "Run mypy"
+        run: python -m mypy custom_components
