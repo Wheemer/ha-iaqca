@@ -105,7 +105,7 @@ def check_voc_keys(conf: ConfigType) -> ConfigType:
     count = sum(param in conf for param in keys)
     if count > 1:
         raise vol.Invalid(
-            "You must provide none or only one of the following: " ", ".join(keys)
+            "You must provide none or only one of the following: , ".join(keys)
         )
     return conf
 
@@ -207,10 +207,16 @@ async def _async_import_yaml_config(
             data = _yaml_entry_data(object_id, cfg)
             entry = current_entries.get(object_id)
             if entry is not None:
-                if entry.data == data and entry.title == data[CONF_NAME] and not entry.options:
+                if (
+                    entry.data == data
+                    and entry.title == data[CONF_NAME]
+                    and not entry.options
+                ):
                     continue
 
-                _LOGGER.info("Sync IAQCA YAML room %s to existing config entry", object_id)
+                _LOGGER.info(
+                    "Sync IAQCA YAML room %s to existing config entry", object_id
+                )
                 hass.config_entries.async_update_entry(
                     entry, title=data[CONF_NAME], data=data, options={}
                 )
@@ -245,7 +251,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     @callback
     def _schedule_yaml_import(event: Event | None = None) -> None:
-        _LOGGER.info("Schedule IAQCA YAML config import/sync for %d rooms", len(yaml_config))
+        _LOGGER.info(
+            "Schedule IAQCA YAML config import/sync for %d rooms", len(yaml_config)
+        )
         hass.async_create_background_task(
             _async_import_yaml_config(hass, dict(yaml_config)),
             "IAQCA YAML config import/sync",
@@ -466,7 +474,9 @@ class IaqcaController:
             worst_index = min(self._indexes.values())
             state_attr[ATTR_WORST_SOURCE_INDEX] = worst_index
             state_attr[ATTR_WORST_SOURCES] = [
-                source for source, index in self._indexes.items() if index == worst_index
+                source
+                for source, index in self._indexes.items()
+                if index == worst_index
             ]
         state_attr[ATTR_CALCULATION_SUMMARY] = self._calculation_summary
 
@@ -496,11 +506,7 @@ class IaqcaController:
         unavailable_sources = sorted(set(self._sources) - set(self._indexes))
         worst_index = min(self._indexes.values()) if self._indexes else None
         worst_sources = (
-            [
-                source
-                for source, index in self._indexes.items()
-                if index == worst_index
-            ]
+            [source for source, index in self._indexes.items() if index == worst_index]
             if worst_index is not None
             else []
         )

@@ -16,8 +16,8 @@ async def async_get_config_entry_diagnostics(
     entry: ConfigEntry,
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    entry_data = hass.data.get(DOMAIN, {}).get(DATA_ENTRY_CONTROLLERS, {}).get(
-        entry.entry_id
+    entry_data = (
+        hass.data.get(DOMAIN, {}).get(DATA_ENTRY_CONTROLLERS, {}).get(entry.entry_id)
     )
     controller = entry_data["controller"] if entry_data else None
 
