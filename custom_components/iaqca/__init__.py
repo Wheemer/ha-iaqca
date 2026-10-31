@@ -67,7 +67,7 @@ from .const import (
     CONF_TVOC,
     CONF_VOC_INDEX,
     DOMAIN,
-    OLD_DOMAIN,
+    LEGACY_DOMAIN,
     LEVEL_EXCELLENT,
     LEVEL_FAIR,
     LEVEL_GOOD,
@@ -148,7 +148,7 @@ IAQ_SCHEMA: Final = vol.Schema(
 CONFIG_SCHEMA: Final = vol.Schema(
     {
         vol.Optional(DOMAIN): cv.schema_with_slug_keys(IAQ_SCHEMA),
-        vol.Optional(OLD_DOMAIN): cv.schema_with_slug_keys(IAQ_SCHEMA),
+        vol.Optional(LEGACY_DOMAIN): cv.schema_with_slug_keys(IAQ_SCHEMA),
     },
     extra=vol.ALLOW_EXTRA,
 )
@@ -167,7 +167,7 @@ def _ensure_domain_data(hass: HomeAssistant) -> dict[str, Any]:
     return data
 
 
-def _get_controller(hass: HomeAssistant, object_id: str) -> "IaqukController":
+def _get_controller(hass: HomeAssistant, object_id: str) -> "IaqcaController":
     """Return a configured controller by object id."""
     data = _ensure_domain_data(hass)
     return data[DATA_CONTROLLERS][object_id]
@@ -231,11 +231,11 @@ async def _async_import_yaml_config(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Import YAML rooms into config entries without creating duplicate YAML entities."""
     yaml_config: dict[str, ConfigType] = {}
-    if OLD_DOMAIN in config:
+    if LEGACY_DOMAIN in config:
         _LOGGER.warning(
             "The iaquk YAML key is deprecated; use iaqca instead. Importing legacy IAQCA config."
         )
-        yaml_config.update(config[OLD_DOMAIN])
+        yaml_config.update(config[LEGACY_DOMAIN])
     if DOMAIN in config:
         yaml_config.update(config[DOMAIN])
     if not yaml_config:
@@ -270,7 +270,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not sensors:
         sensors = list(SENSORS.keys())
 
-    controller = IaqukController(hass, object_id, name, sources)
+    controller = IaqcaController(hass, object_id, name, sources)
     data[DATA_CONTROLLERS][object_id] = controller
     data[DATA_ENTRY_CONTROLLERS][entry.entry_id] = {
         CONF_OBJECT_ID: object_id,
@@ -304,7 +304,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unloaded
 
 
-class IaqukController:
+class IaqcaController:
     """IAQCA controller."""
 
     def __init__(

@@ -105,7 +105,7 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     )
 
 
-class IaqukConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle an IAQCA config flow."""
 
     VERSION = 2
@@ -187,12 +187,12 @@ class IaqukConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
-    ) -> IaqukOptionsFlow:
+    ) -> IaqcaOptionsFlow:
         """Create the options flow."""
-        return IaqukOptionsFlow(config_entry)
+        return IaqcaOptionsFlow(config_entry)
 
 
-class IaqukOptionsFlow(config_entries.OptionsFlow):
+class IaqcaOptionsFlow(config_entries.OptionsFlow):
     """Handle IAQCA options."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:

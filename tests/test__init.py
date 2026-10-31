@@ -41,7 +41,7 @@ from custom_components.iaqca import (
     MWEIGTH_NO2,
     MWEIGTH_TVOC,
     UNIT_PPM,
-    IaqukController,
+    IaqcaController,
     _deslugify,
     check_voc_keys,
 )
@@ -117,7 +117,7 @@ async def test_async_setup(hass: HomeAssistant):
 
 async def test_controller_init(hass: HomeAssistant):
     """Test controller initialization."""
-    controller = IaqukController(hass, "test", "Test", {"": "sensor.test_monitored"})
+    controller = IaqcaController(hass, "test", "Test", {"": "sensor.test_monitored"})
 
     expected_attributes = {
         ATTR_SOURCES_SET: 1,
@@ -141,7 +141,7 @@ async def test_update(hass: HomeAssistant):
         CONF_HUMIDITY: entity_id + "2",
         CONF_CO2: entity_id + "3",
     }
-    controller = IaqukController(hass, "test", "Test", config)
+    controller = IaqcaController(hass, "test", "Test", config)
 
     hass.states.async_set(
         entity_id, 17, {ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS}
@@ -165,7 +165,7 @@ async def test_update(hass: HomeAssistant):
     config = {
         CONF_TEMPERATURE: entity_id,
     }
-    controller = IaqukController(hass, "test", "Test", config)
+    controller = IaqcaController(hass, "test", "Test", config)
 
     expected_attributes = {
         ATTR_SOURCES_SET: 1,
@@ -216,11 +216,11 @@ async def test_update(hass: HomeAssistant):
 
 async def test__has_state():
     """Test state detection."""
-    assert IaqukController._has_state(None) is False
-    assert IaqukController._has_state(STATE_UNKNOWN) is False
-    assert IaqukController._has_state(STATE_UNAVAILABLE) is False
+    assert IaqcaController._has_state(None) is False
+    assert IaqcaController._has_state(STATE_UNKNOWN) is False
+    assert IaqcaController._has_state(STATE_UNAVAILABLE) is False
 
-    assert IaqukController._has_state("") is True
+    assert IaqcaController._has_state("") is True
 
 
 async def test__get_number_state(hass: HomeAssistant):
@@ -231,7 +231,7 @@ async def test__get_number_state(hass: HomeAssistant):
     config = {
         CONF_TEMPERATURE: entity_id,
     }
-    controller = IaqukController(hass, "test", "Test", config)
+    controller = IaqcaController(hass, "test", "Test", config)
 
     assert controller._get_number_state("sensor.nonexistent") is None
 
@@ -318,11 +318,11 @@ async def test__temperature_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_HUMIDITY: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_HUMIDITY: entity_id})
 
     assert controller._temperature_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     hass.states.async_set(entity_id, 12.5, {ATTR_UNIT_OF_MEASUREMENT: "ppm"})
     with pytest.raises(ValueError):  # noqa: PT011
@@ -341,11 +341,11 @@ async def test__humidity_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._humidity_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_HUMIDITY: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_HUMIDITY: entity_id})
 
     hass.states.async_set(
         entity_id, 12.5, {ATTR_UNIT_OF_MEASUREMENT: UnitOfTemperature.CELSIUS}
@@ -367,15 +367,15 @@ async def test__co2_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._co2_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_CO2: "sensor.nonexistent"})
+    controller = IaqcaController(hass, "test", "Test", {CONF_CO2: "sensor.nonexistent"})
 
     assert controller._co2_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_CO2: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_CO2: entity_id})
 
     for i, value in enumerate([1801, 1800, 1500, 800, 599]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "ppm"})
@@ -392,17 +392,17 @@ async def test__tvoc_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._tvoc_index is None
 
-    controller = IaqukController(
+    controller = IaqcaController(
         hass, "test", "Test", {CONF_TVOC: "sensor.nonexistent"}
     )
 
     assert controller._tvoc_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TVOC: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TVOC: entity_id})
 
     for i, value in enumerate([1.01, 1.0, 0.5, 0.3, 0.09]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
@@ -419,17 +419,17 @@ async def test__voc_index_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._voc_index_index is None
 
-    controller = IaqukController(
+    controller = IaqcaController(
         hass, "test", "Test", {CONF_VOC_INDEX: "sensor.nonexistent"}
     )
 
     assert controller._voc_index_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_VOC_INDEX: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_VOC_INDEX: entity_id})
 
     for i, value in enumerate([261, 181, 116, 51, 0]):
         hass.states.async_set(entity_id, value)
@@ -446,21 +446,21 @@ async def test__pm_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._pm_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_PM: []})
+    controller = IaqcaController(hass, "test", "Test", {CONF_PM: []})
 
     assert controller._pm_index is None
 
-    controller = IaqukController(
+    controller = IaqcaController(
         hass, "test", "Test", {CONF_PM: ["sensor.nonexistent"]}
     )
 
     assert controller._pm_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_PM: [entity_id]})
+    controller = IaqcaController(hass, "test", "Test", {CONF_PM: [entity_id]})
 
     for i, value in enumerate([0.065, 0.064, 0.053, 0.041, 0.023]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
@@ -477,15 +477,15 @@ async def test__no2_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._no2_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_NO2: "sensor.nonexistent"})
+    controller = IaqcaController(hass, "test", "Test", {CONF_NO2: "sensor.nonexistent"})
 
     assert controller._no2_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_NO2: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_NO2: entity_id})
 
     for i, value in enumerate([0.41, 0.4, 0.19]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
@@ -501,15 +501,15 @@ async def test__co_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._co_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_CO: "sensor.nonexistent"})
+    controller = IaqcaController(hass, "test", "Test", {CONF_CO: "sensor.nonexistent"})
 
     assert controller._co_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_CO: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_CO: entity_id})
 
     for i, value in enumerate([7.1, 7, 0]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
@@ -525,17 +525,17 @@ async def test__hcho_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._hcho_index is None
 
-    controller = IaqukController(
+    controller = IaqcaController(
         hass, "test", "Test", {CONF_HCHO: "sensor.nonexistent"}
     )
 
     assert controller._hcho_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_HCHO: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_HCHO: entity_id})
 
     for i, value in enumerate([0.201, 0.20, 0.10, 0.05, 0.019]):
         hass.states.async_set(entity_id, value, {ATTR_UNIT_OF_MEASUREMENT: "mg/m3"})
@@ -555,17 +555,17 @@ async def test__radon_index(hass: HomeAssistant):
 
     entity_id = "sensor.test_monitored"
 
-    controller = IaqukController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_TEMPERATURE: entity_id})
 
     assert controller._radon_index is None
 
-    controller = IaqukController(
+    controller = IaqcaController(
         hass, "test", "Test", {CONF_RADON: "sensor.nonexistent"}
     )
 
     assert controller._radon_index is None
 
-    controller = IaqukController(hass, "test", "Test", {CONF_RADON: entity_id})
+    controller = IaqcaController(hass, "test", "Test", {CONF_RADON: entity_id})
 
     hass.states.async_set(entity_id, 101, {ATTR_UNIT_OF_MEASUREMENT: "Bq/m3"})
     assert controller._radon_index == 1

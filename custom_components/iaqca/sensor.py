@@ -17,7 +17,7 @@ from homeassistant.helpers.entity import async_generate_entity_id
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
-from . import DATA_ENTRY_CONTROLLERS, IaqukController, _get_controller
+from . import DATA_ENTRY_CONTROLLERS, IaqcaController, _get_controller
 from .const import (
     DOMAIN,
     ICON_DEFAULT,
@@ -63,7 +63,7 @@ async def async_setup_platform(
     sensors = []
     for sensor_type in discovery_info[CONF_SENSORS]:
         _LOGGER.debug("Initialize sensor %s for controller %s", sensor_type, object_id)
-        sensors.append(IaqukSensor(controller, sensor_type))
+        sensors.append(IaqcaSensor(controller, sensor_type))
 
     async_add_entities(sensors, update_before_add=True)
 
@@ -78,17 +78,17 @@ async def async_setup_entry(
     controller = entry_data["controller"]
     async_add_entities(
         [
-            IaqukSensor(controller, sensor_type)
+            IaqcaSensor(controller, sensor_type)
             for sensor_type in entry_data[CONF_SENSORS]
         ],
         update_before_add=True,
     )
 
 
-class IaqukSensor(SensorEntity):
+class IaqcaSensor(SensorEntity):
     """IAQCA sensor."""
 
-    def __init__(self, controller: IaqukController, sensor_type: str) -> None:
+    def __init__(self, controller: IaqcaController, sensor_type: str) -> None:
         """Initialize sensor."""
         self._controller = controller
         self._sensor_type = sensor_type
