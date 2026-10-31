@@ -1,0 +1,109 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Indoor Air Quality Canada Index",
+        "description": "Create a calculated indoor air quality score from existing Home Assistant sensors.",
+        "data": {
+          "object_id": "Object ID",
+          "name": "Name",
+          "sensors": "Created sensors",
+          "temperature": "Temperature sensor",
+          "humidity": "Humidity sensor",
+          "co2": "Carbon dioxide sensor",
+          "co": "Carbon monoxide sensor(s)",
+          "no2": "Nitrogen dioxide sensor",
+          "tvoc": "TVOC sensor",
+          "voc_index": "VOC index sensor",
+          "hcho": "Formaldehyde sensor",
+          "radon": "Radon sensor",
+          "pm": "Particulate matter sensor(s)"
+        },
+        "data_description": {
+          "object_id": "Stable slug used for entity IDs, for example garage or livingroom.",
+          "sensors": "Comma-separated list: iaq_level, iaq_index. Leave blank to create both.",
+          "co": "Comma-separated sensor entity IDs. If multiple are provided, the highest reading is used.",
+          "pm": "Comma-separated sensor entity IDs. Values are summed before scoring."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Indoor Air Quality Canada Index",
+        "description": "Update the sources used to calculate this IAQ score.",
+        "data": {
+          "object_id": "Object ID",
+          "name": "Name",
+          "sensors": "Created sensors",
+          "temperature": "Temperature sensor",
+          "humidity": "Humidity sensor",
+          "co2": "Carbon dioxide sensor",
+          "co": "Carbon monoxide sensor(s)",
+          "no2": "Nitrogen dioxide sensor",
+          "tvoc": "TVOC sensor",
+          "voc_index": "VOC index sensor",
+          "hcho": "Formaldehyde sensor",
+          "radon": "Radon sensor",
+          "pm": "Particulate matter sensor(s)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "That object ID is already configured.",
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "invalid_sources": "The imported IAQCA YAML source configuration is invalid."
+    },
+    "error": {
+      "invalid_entity": "Enter a valid Home Assistant entity ID.",
+      "invalid_object_id": "Enter a valid slug-style object ID.",
+      "invalid_sensor": "Use iaq_level, iaq_index, or both.",
+      "invalid_sources": "Use either TVOC or VOC Index, not both.",
+      "missing_sources": "Add at least one source sensor."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Indoor Air Quality Canada Index Options",
+        "description": "Update the sources used to calculate this IAQ score.",
+        "data": {
+          "object_id": "Object ID",
+          "name": "Name",
+          "sensors": "Created sensors",
+          "temperature": "Temperature sensor",
+          "humidity": "Humidity sensor",
+          "co2": "Carbon dioxide sensor",
+          "co": "Carbon monoxide sensor(s)",
+          "no2": "Nitrogen dioxide sensor",
+          "tvoc": "TVOC sensor",
+          "voc_index": "VOC index sensor",
+          "hcho": "Formaldehyde sensor",
+          "radon": "Radon sensor",
+          "pm": "Particulate matter sensor(s)"
+        }
+      }
+    },
+    "error": {
+      "invalid_entity": "Enter a valid Home Assistant entity ID.",
+      "invalid_object_id": "Enter a valid slug-style object ID.",
+      "invalid_sensor": "Use iaq_level, iaq_index, or both.",
+      "invalid_sources": "Use either TVOC or VOC Index, not both.",
+      "missing_sources": "Add at least one source sensor."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "iaq_index": {
+        "name": "Indoor Air Quality Index"
+      },
+      "iaq_level": {
+        "name": "Indoor Air Quality Level",
+        "state": {
+          "Inadequate": "Inadequate",
+          "Poor": "Poor",
+          "Fair": "Fair",
+          "Good": "Good",
+          "Excellent": "Excellent"
+        }
+      }
+    }
+  }
+}

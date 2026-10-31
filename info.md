@@ -14,7 +14,7 @@
 
 _This component allows you to evaluate the air quality in any room, using data from various sensors installed there. Such as temperature, humidity, carbon dioxide sensors, etc._
 
-The index is calculating in accordance with the [IAQ UK organization methodology](https://github.com/Limych/ha-iaquk/blob/dev/IAQ_Rating_Index.pdf).
+The index is a simple Canadian-guidance-based home IAQ score using configured live sensors. It is not an official Government of Canada index.
 
 ![][exampleimg]
 
@@ -41,23 +41,23 @@ I put a lot of work into making this repo and component available and updated to
 
 ***
 
-[component]: https://github.com/Limych/ha-iaquk
-[commits-shield]: https://img.shields.io/github/commit-activity/y/Limych/ha-iaquk.svg?style=popout
-[commits]: https://github.com/Limych/ha-iaquk/commits/master
+[component]: https://github.com/Wheemer/ha-iaqca
+[commits-shield]: https://img.shields.io/github/commit-activity/y/Wheemer/ha-iaqca.svg?style=popout
+[commits]: https://github.com/Wheemer/ha-iaqca/commits/master
 [hacs-shield]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=popout
 [hacs]: https://hacs.xyz
-[exampleimg]: https://github.com/Limych/ha-iaquk/raw/dev/iaquk.jpg
+[exampleimg]: https://github.com/Wheemer/ha-iaqca/raw/dev/iaqca.jpg
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
 [forum]: https://community.home-assistant.io/t/indoor-air-quality-sensor-component/160474
-[license]: https://github.com/Limych/ha-iaquk/blob/main/LICENSE
+[license]: https://github.com/Wheemer/ha-iaqca/blob/main/LICENSE
 [license-shield]: https://img.shields.io/badge/license-Creative_Commons_BY--NC--SA_License-lightgray.svg?style=popout
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Andrey%20Khrolenok%20%40Limych-blue.svg?style=popout
-[releases-shield]: https://img.shields.io/github/release/Limych/ha-iaquk.svg?style=popout
-[releases]: https://github.com/Limych/ha-iaquk/releases
-[releases-latest]: https://github.com/Limych/ha-iaquk/releases/latest
+[releases-shield]: https://img.shields.io/github/release/Wheemer/ha-iaqca.svg?style=popout
+[releases]: https://github.com/Wheemer/ha-iaqca/releases
+[releases-latest]: https://github.com/Wheemer/ha-iaqca/releases/latest
 [user_profile]: https://github.com/Limych
-[report_bug]: https://github.com/Limych/ha-iaquk/issues/new?template=bug_report.md
-[suggest_idea]: https://github.com/Limych/ha-iaquk/issues/new?template=feature_request.md
-[contributors]: https://github.com/Limych/ha-iaquk/graphs/contributors
+[report_bug]: https://github.com/Wheemer/ha-iaqca/issues/new?template=bug_report.md
+[suggest_idea]: https://github.com/Wheemer/ha-iaqca/issues/new?template=feature_request.md
+[contributors]: https://github.com/Wheemer/ha-iaqca/graphs/contributors
 [patreon-shield]: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DLimych%26type%3Dpatrons&style=popout
 [patreon]: https://www.patreon.com/join/limych

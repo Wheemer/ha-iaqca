@@ -1,6 +1,6 @@
 *Please :star: this repo if you find it useful*
 
-# Indoor Air Quality Sensor Component for Home Assistant
+# Indoor Air Quality Canada Index for Home Assistant
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
@@ -14,7 +14,7 @@
 
 This component allows you to evaluate the air quality in any room, using data from various sensors installed there. Such as temperature, humidity, carbon dioxide sensors, etc.
 
-The index is calculating in accordance with the [IAQ UK organization methodology](IAQ_Rating_Index.pdf).
+The index is a simple Canadian-guidance-based home IAQ score using configured live sensors. It is not an official Government of Canada index.
 
 I also suggest you [visit the support topic][forum] on the community forum.
 
@@ -25,23 +25,23 @@ I also suggest you [visit the support topic][forum] on the community forum.
 ### Install from HACS (recommended)
 
 1. Have [HACS][hacs] installed, this will allow you to easily manage and track updates.
-1. Search for "Indoor Air Quality UK Index".
+1. Search for "Indoor Air Quality Canada Index".
 1. Click Install below the found integration.
 
 ... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `iaquk` sensor to your `configuration.yaml` file. See configuration examples below.
+1. Add `iaqca` sensor to your `configuration.yaml` file. See configuration examples below.
 1. Restart Home Assistant
 
 ### Manual installation
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 1. If you do not have a `custom_components` directory (folder) there, you need to create it.
-1. In the `custom_components` directory (folder) create a new folder called `iaquk`.
-1. Download file `iaquk.zip` from the [latest release section][releases-latest] in this repository.
+1. In the `custom_components` directory (folder) create a new folder called `iaqca`.
+1. Download file `iaqca.zip` from the [latest release section][releases-latest] in this repository.
 1. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
 
 ... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `iaquk` sensor to your `configuration.yaml` file. See configuration examples below.
+1. Add `iaqca` sensor to your `configuration.yaml` file. See configuration examples below.
 1. Restart Home Assistant
 
 ### Configuration Examples
@@ -50,7 +50,7 @@ To use this component in your installation, add the following to your `configura
 
 ```yaml
 # Example configuration.yaml entry
-iaquk:
+iaqca:
   kitchen:
     sources:
       temperature: sensor.kitchen_temperature
@@ -169,7 +169,7 @@ To enable debug logs use this configuration:
 logger:
   default: info
   logs:
-    custom_components.iaquk: debug
+    custom_components.iaqca: debug
 ```
 ... then restart HA.
 
@@ -218,23 +218,23 @@ SOFTWARE.
 
 ***
 
-[component]: https://github.com/Limych/ha-iaquk
-[commits-shield]: https://img.shields.io/github/commit-activity/y/Limych/ha-iaquk.svg?style=popout
-[commits]: https://github.com/Limych/ha-iaquk/commits/master
+[component]: https://github.com/Wheemer/ha-iaqca
+[commits-shield]: https://img.shields.io/github/commit-activity/y/Wheemer/ha-iaqca.svg?style=popout
+[commits]: https://github.com/Wheemer/ha-iaqca/commits/master
 [hacs-shield]: https://img.shields.io/badge/HACS-Default-orange.svg?style=popout
 [hacs]: https://hacs.xyz
-[exampleimg]: https://github.com/Limych/ha-iaquk/raw/dev/iaquk.jpg
+[exampleimg]: https://github.com/Wheemer/ha-iaqca/raw/dev/iaqca.jpg
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
 [forum]: https://community.home-assistant.io/t/indoor-air-quality-sensor-component/160474
-[license]: https://github.com/Limych/ha-iaquk/blob/main/LICENSE
-[license-shield]: https://img.shields.io/github/license/Limych/ha-iaquk.svg?style=popout
+[license]: https://github.com/Wheemer/ha-iaqca/blob/main/LICENSE
+[license-shield]: https://img.shields.io/github/license/Wheemer/ha-iaqca.svg?style=popout
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Andrey%20Khrolenok%20%40Limych-blue.svg?style=popout
-[releases-shield]: https://img.shields.io/github/release/Limych/ha-iaquk.svg?style=popout
-[releases]: https://github.com/Limych/ha-iaquk/releases
-[releases-latest]: https://github.com/Limych/ha-iaquk/releases/latest
+[releases-shield]: https://img.shields.io/github/release/Wheemer/ha-iaqca.svg?style=popout
+[releases]: https://github.com/Wheemer/ha-iaqca/releases
+[releases-latest]: https://github.com/Wheemer/ha-iaqca/releases/latest
 [user_profile]: https://github.com/Limych
-[report_bug]: https://github.com/Limych/ha-iaquk/issues/new?template=bug_report.md
-[suggest_idea]: https://github.com/Limych/ha-iaquk/issues/new?template=feature_request.md
-[contributors]: https://github.com/Limych/ha-iaquk/graphs/contributors
+[report_bug]: https://github.com/Wheemer/ha-iaqca/issues/new?template=bug_report.md
+[suggest_idea]: https://github.com/Wheemer/ha-iaqca/issues/new?template=feature_request.md
+[contributors]: https://github.com/Wheemer/ha-iaqca/graphs/contributors
 [patreon-shield]: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DLimych%26type%3Dpatrons&style=popout
 [patreon]: https://www.patreon.com/join/limych

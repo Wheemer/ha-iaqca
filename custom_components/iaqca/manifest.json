@@ -1,0 +1,17 @@
+{
+  "domain": "iaqca",
+  "name": "Indoor Air Quality Canada Index",
+  "codeowners": [
+    "@Wheemer"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Wheemer/ha-iaqca",
+  "iot_class": "calculated",
+  "integration_type": "service",
+  "issue_tracker": "https://github.com/Wheemer/ha-iaqca/issues",
+  "requirements": [
+    "pip>=21.3.1"
+  ],
+  "version": "1.8.0"
+}

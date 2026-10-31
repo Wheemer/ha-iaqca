@@ -7,8 +7,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import assert_setup_component
 
-from custom_components.iaquk import IaqukController
-from custom_components.iaquk.const import (
+from custom_components.iaqca import IaqukController
+from custom_components.iaqca.const import (
     DOMAIN,
     ICON_DEFAULT,
     ICON_EXCELLENT,
@@ -22,7 +22,7 @@ from custom_components.iaquk.const import (
     LEVEL_INADEQUATE,
     LEVEL_POOR,
 )
-from custom_components.iaquk.sensor import SENSOR_INDEX, SENSOR_LEVEL, IaqukSensor
+from custom_components.iaqca.sensor import SENSOR_INDEX, SENSOR_LEVEL, IaqukSensor
 
 
 async def test_entity_initialization(hass: HomeAssistant):
@@ -51,7 +51,7 @@ async def test_entity_initialization(hass: HomeAssistant):
     assert entity.name == "Test Indoor Air Quality Level"
     assert entity.should_poll is True
     assert entity.available is True
-    assert entity.device_class == "iaquk__level"
+    assert entity.device_class == "iaqca__level"
     assert entity.state is None
     assert entity.state_class is None
     assert entity.icon == ICON_FAIR

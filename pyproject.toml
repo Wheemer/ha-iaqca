@@ -1,5 +1,5 @@
 [project]
-name = "iaquk"
+name = "iaqca"
 requires-python = ">=3.12"
 
 [tool.black]

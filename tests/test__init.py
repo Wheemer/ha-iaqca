@@ -14,7 +14,7 @@ from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import assert_setup_component
 from voluptuous import Invalid
 
-from custom_components.iaquk import (
+from custom_components.iaqca import (
     ATTR_SOURCE_INDEX_TPL,
     ATTR_SOURCES_SET,
     ATTR_SOURCES_USED,
@@ -45,7 +45,7 @@ from custom_components.iaquk import (
     _deslugify,
     check_voc_keys,
 )
-from custom_components.iaquk.const import UNIT_MGM3, UNIT_PPB, UNIT_UGM3
+from custom_components.iaqca.const import UNIT_MGM3, UNIT_PPB, UNIT_UGM3
 
 
 async def async_mock_sensors(hass: HomeAssistant):
