@@ -34,7 +34,6 @@ BODY = """
 
 ## Links
 
-- [If you like what I (@limych) do please consider sponsoring me on Patreon](https://www.patreon.com/join/limych?)
 """
 
 CHANGE = "- [{line}]({link}) @{author}\n"

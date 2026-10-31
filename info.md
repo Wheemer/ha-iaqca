@@ -1,63 +1,124 @@
-{% if prerelease %}
-### NB!: This is a Beta version!
-{% endif %}
+<div align="center">
 
-[![GitHub Release][releases-shield]][releases]
-[![GitHub Activity][commits-shield]][commits]
-[![License][license-shield]][license]
+# Indoor Air Quality Canada Index
 
-[![hacs][hacs-shield]][hacs]
-[![Project Maintenance][maintenance-shield]][user_profile]
-[![Support me on Patreon][patreon-shield]][patreon]
+### A simple Canadian-guidance-based indoor air quality integration for Home Assistant
 
-[![Community Forum][forum-shield]][forum]
+[![HACS Custom](https://img.shields.io/badge/HACS-CUSTOM-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://hacs.xyz/)
+[![Home Assistant 2024.11+](https://img.shields.io/badge/HOME%20ASSISTANT-2024.11%2B-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://www.home-assistant.io/)
+[![Upstream](https://img.shields.io/badge/UPSTREAM-Limych%2Fha--iaquk-555555?style=for-the-badge&logo=github&logoColor=white&labelColor=555555)](https://github.com/Limych/ha-iaquk)
 
-_This component allows you to evaluate the air quality in any room, using data from various sensors installed there. Such as temperature, humidity, carbon dioxide sensors, etc._
+<p>
+  <strong>IAQCA keeps the familiar 1-65 Home Assistant air-quality score while using Canadian residential guidance where available.</strong>
+</p>
 
-The index is a simple Canadian-guidance-based home IAQ score using configured live sensors. It is not an official Government of Canada index.
+</div>
 
-![][exampleimg]
+Indoor Air Quality Canada Index (IAQCA) evaluates configured live sensors in one room and exposes a numeric index plus a readable level. It is designed for practical home use: dashboards, ventilation control, source alerts, and automation conditions.
 
-{% if not installed %}
+This is a maintained fork of [Limych/ha-iaquk](https://github.com/Limych/ha-iaquk). It preserves the upstream MIT license and credits the original project while converting the package, configuration flow, documentation, and guidance profile for Canada.
+
+<div style="border: 1px solid rgba(65, 189, 245, 0.45); border-radius: 8px; padding: 16px 18px; margin: 18px 0;">
+  <strong style="color: #41bdf5;">Scope:</strong> IAQCA is a simple home IAQ score, not an official Government of Canada index or a replacement for certified safety equipment. Carbon monoxide alarms and smoke alarms remain essential.
+</div>
+
+<div style="border: 1px solid rgba(65, 189, 245, 0.45); border-radius: 8px; padding: 16px 18px; margin: 18px 0;">
+  <strong style="color: #41bdf5;">Canadian guidance:</strong> CO2, CO, NO2, formaldehyde, and radon use Canadian residential guidance. PM2.5, generic TVOC, VOC Index, temperature, and humidity remain practical live home signals for source detection, comfort, and ventilation.
+</div>
+
 ## Installation
 
-1. Click install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Blueprint".
+### HACS
 
-{% endif %}
-## Useful Links
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Wheemer&repository=ha-iaqca&category=integration)
 
-- [Documentation][component]
-- [Report a Bug][report_bug]
-- [Suggest an idea][suggest_idea]
+1. Open **HACS** in Home Assistant.
+2. Open the menu and choose **Custom repositories**.
+3. Add <code>https://github.com/Wheemer/ha-iaqca</code> with category **Integration**.
+4. Search for **Indoor Air Quality Canada Index** and install it.
+5. Restart Home Assistant.
 
-<p align="center">* * *</p>
-I put a lot of work into making this repo and component available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
-<p align="center"><a href="https://www.patreon.com/join/limych?" target="_blank"><img src="http://khrolenok.ru/support_patreon.png" alt="Patreon" width="250" height="48"></a></p>
+### Manual install
 
-| Bitcoin                                                                                                                                                                                                                  | Ethereum                                                                                                                         | Monero                                                                                                                                                                              |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <a href="https://sochain.com/address/BTC/16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts" target="_blank"><img alt="Bitcoin" src="http://khrolenok.ru/support_btc.png" width="200"/></a><pre>16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts</pre> | <img alt="Ethereum" src="http://khrolenok.ru/support_eth.png" width="200"/><pre>0x9FB9429f9A85Fa2395Bb59e50452F64977435d61</pre> | <img alt="Monero" src="http://khrolenok.ru/support_xmr.png" width="200"/><pre>48Kt2ksKYxHg46T5sJ7feBXtndHhxk1JgYJwtwGG8Jb7asNFShRwUDtFgX2UvVThXa5GGyGbMCfNJX7YwFZBRDX43q4mT83</pre> |
+1. Copy the repository's <code>custom_components/iaqca</code> folder to <code>&lt;config&gt;/custom_components/iaqca</code>.
+2. Restart Home Assistant.
 
-***
+## Configure a Room
 
-[component]: https://github.com/Wheemer/ha-iaqca
-[commits-shield]: https://img.shields.io/github/commit-activity/y/Wheemer/ha-iaqca.svg?style=popout
-[commits]: https://github.com/Wheemer/ha-iaqca/commits/master
-[hacs-shield]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=popout
-[hacs]: https://hacs.xyz
-[exampleimg]: https://github.com/Wheemer/ha-iaqca/raw/dev/iaqca.jpg
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
-[forum]: https://community.home-assistant.io/t/indoor-air-quality-sensor-component/160474
-[license]: https://github.com/Wheemer/ha-iaqca/blob/main/LICENSE
-[license-shield]: https://img.shields.io/badge/license-Creative_Commons_BY--NC--SA_License-lightgray.svg?style=popout
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Andrey%20Khrolenok%20%40Limych-blue.svg?style=popout
-[releases-shield]: https://img.shields.io/github/release/Wheemer/ha-iaqca.svg?style=popout
-[releases]: https://github.com/Wheemer/ha-iaqca/releases
-[releases-latest]: https://github.com/Wheemer/ha-iaqca/releases/latest
-[user_profile]: https://github.com/Limych
-[report_bug]: https://github.com/Wheemer/ha-iaqca/issues/new?template=bug_report.md
-[suggest_idea]: https://github.com/Wheemer/ha-iaqca/issues/new?template=feature_request.md
-[contributors]: https://github.com/Wheemer/ha-iaqca/graphs/contributors
-[patreon-shield]: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DLimych%26type%3Dpatrons&style=popout
-[patreon]: https://www.patreon.com/join/limych
+Use the Home Assistant integration UI:
+
+1. Open **Settings > Devices & services**.
+2. Select **Add integration**.
+3. Search for **Indoor Air Quality Canada Index**.
+4. Give the room a name and select the sensor entities you want to use.
+
+Each room creates these entities by default:
+
+- <code>sensor.&lt;room&gt;_iaq_index</code>: 1-65, where higher is better.
+- <code>sensor.&lt;room&gt;_iaq_level</code>: Excellent, Good, Fair, Poor, or Inadequate.
+
+The index entity includes source values, source status, active issues, contributing source scores, and the active guidance profile as attributes.
+
+## Supported Sources
+
+| Source | Sensor unit |
+| --- | --- |
+| Temperature | C or F |
+| Relative humidity | % |
+| Carbon dioxide | ppm, ppb, mg/m3, or ug/m3 |
+| Carbon monoxide | ppm, ppb, mg/m3, or ug/m3 |
+| Nitrogen dioxide | ppm, ppb, mg/m3, or ug/m3 |
+| Formaldehyde | ppm, ppb, mg/m3, or ug/m3 |
+| Radon | Bq/m3 |
+| PM | mg/m3 or ug/m3 |
+| TVOC | ppm, ppb, mg/m3, or ug/m3 |
+| VOC Index | unitless sensor index |
+
+Only one of TVOC or VOC Index can be configured for a room. CO and PM accept one entity or a comma-separated list of entities.
+
+## YAML Import and Migration
+
+UI configuration is the recommended setup path. Existing YAML configuration using the <code>iaqca:</code> key is imported into config entries after Home Assistant starts.
+
+The legacy <code>iaquk:</code> YAML key is also imported one-way for migration compatibility. It is deprecated; update it to <code>iaqca:</code> after confirming the imported room appears correctly.
+
+~~~yaml
+iaqca:
+  kitchen:
+    name: Kitchen
+    sources:
+      temperature: sensor.hood_air_temperature
+      humidity: sensor.hood_air_humidity
+      co2: sensor.hood_air_carbon_dioxide
+      tvoc: sensor.hood_air_volatile_organic_compounds
+      pm:
+        - sensor.hood_air_pm2_5
+~~~
+
+## Simple Canadian Guidance Profile
+
+IAQCA intentionally stays lightweight. It uses the configured sensor states directly and does not require an outdoor monitor, a separate database, or additional helper entities.
+
+- Canadian residential guidance is applied where a direct contaminant guideline exists.
+- PM2.5 and VOC readings remain useful operational signals for cooking, smoke, ventilation, and source events.
+- The score is suitable for Home Assistant automations, but it is not a health diagnosis or regulatory compliance determination.
+
+## Troubleshooting
+
+Enable integration debug logging:
+
+~~~yaml
+logger:
+  logs:
+    custom_components.iaqca: debug
+~~~
+
+Then restart Home Assistant and review **Settings > System > Logs**. The index attributes identify unavailable sources, invalid units, converted values, and active source issues.
+
+## Upstream Credit
+
+IAQCA is based on [Indoor Air Quality UK Index](https://github.com/Limych/ha-iaquk) by [Andrey Khrolenok (@Limych)](https://github.com/Limych). This fork retains the upstream MIT license and acknowledges the original project's architecture and foundation.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

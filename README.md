@@ -1,240 +1,124 @@
-*Please :star: this repo if you find it useful*
+<div align="center">
 
-# Indoor Air Quality Canada Index for Home Assistant
+# Indoor Air Quality Canada Index
 
-[![GitHub Release][releases-shield]][releases]
-[![GitHub Activity][commits-shield]][commits]
-[![License][license-shield]][license]
+### A simple Canadian-guidance-based indoor air quality integration for Home Assistant
 
-[![hacs][hacs-shield]][hacs]
-[![Project Maintenance][maintenance-shield]][user_profile]
-[![Support me on Patreon][patreon-shield]][patreon]
+[![HACS Custom](https://img.shields.io/badge/HACS-CUSTOM-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://hacs.xyz/)
+[![Home Assistant 2024.11+](https://img.shields.io/badge/HOME%20ASSISTANT-2024.11%2B-41BDF5?style=for-the-badge&logo=home-assistant&logoColor=white&labelColor=555555)](https://www.home-assistant.io/)
+[![Upstream](https://img.shields.io/badge/UPSTREAM-Limych%2Fha--iaquk-555555?style=for-the-badge&logo=github&logoColor=white&labelColor=555555)](https://github.com/Limych/ha-iaquk)
 
-[![Community Forum][forum-shield]][forum]
+<p>
+  <strong>IAQCA keeps the familiar 1-65 Home Assistant air-quality score while using Canadian residential guidance where available.</strong>
+</p>
 
-This component allows you to evaluate the air quality in any room, using data from various sensors installed there. Such as temperature, humidity, carbon dioxide sensors, etc.
+</div>
 
-The index is a simple Canadian-guidance-based home IAQ score using configured live sensors. It is not an official Government of Canada index.
+Indoor Air Quality Canada Index (IAQCA) evaluates configured live sensors in one room and exposes a numeric index plus a readable level. It is designed for practical home use: dashboards, ventilation control, source alerts, and automation conditions.
 
-I also suggest you [visit the support topic][forum] on the community forum.
+This is a maintained fork of [Limych/ha-iaquk](https://github.com/Limych/ha-iaquk). It preserves the upstream MIT license and credits the original project while converting the package, configuration flow, documentation, and guidance profile for Canada.
 
-![][exampleimg]
+<div style="border: 1px solid rgba(65, 189, 245, 0.45); border-radius: 8px; padding: 16px 18px; margin: 18px 0;">
+  <strong style="color: #41bdf5;">Scope:</strong> IAQCA is a simple home IAQ score, not an official Government of Canada index or a replacement for certified safety equipment. Carbon monoxide alarms and smoke alarms remain essential.
+</div>
+
+<div style="border: 1px solid rgba(65, 189, 245, 0.45); border-radius: 8px; padding: 16px 18px; margin: 18px 0;">
+  <strong style="color: #41bdf5;">Canadian guidance:</strong> CO2, CO, NO2, formaldehyde, and radon use Canadian residential guidance. PM2.5, generic TVOC, VOC Index, temperature, and humidity remain practical live home signals for source detection, comfort, and ventilation.
+</div>
 
 ## Installation
 
-### Install from HACS (recommended)
+### HACS
 
-1. Have [HACS][hacs] installed, this will allow you to easily manage and track updates.
-1. Search for "Indoor Air Quality Canada Index".
-1. Click Install below the found integration.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Wheemer&repository=ha-iaqca&category=integration)
 
-... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `iaqca` sensor to your `configuration.yaml` file. See configuration examples below.
-1. Restart Home Assistant
+1. Open **HACS** in Home Assistant.
+2. Open the menu and choose **Custom repositories**.
+3. Add <code>https://github.com/Wheemer/ha-iaqca</code> with category **Integration**.
+4. Search for **Indoor Air Quality Canada Index** and install it.
+5. Restart Home Assistant.
 
-### Manual installation
+### Manual install
 
-1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-1. If you do not have a `custom_components` directory (folder) there, you need to create it.
-1. In the `custom_components` directory (folder) create a new folder called `iaqca`.
-1. Download file `iaqca.zip` from the [latest release section][releases-latest] in this repository.
-1. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
+1. Copy the repository's <code>custom_components/iaqca</code> folder to <code>&lt;config&gt;/custom_components/iaqca</code>.
+2. Restart Home Assistant.
 
-... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `iaqca` sensor to your `configuration.yaml` file. See configuration examples below.
-1. Restart Home Assistant
+## Configure a Room
 
-### Configuration Examples
+Use the Home Assistant integration UI:
 
-To use this component in your installation, add the following to your `configuration.yaml` file:
+1. Open **Settings > Devices & services**.
+2. Select **Add integration**.
+3. Search for **Indoor Air Quality Canada Index**.
+4. Give the room a name and select the sensor entities you want to use.
 
-```yaml
-# Example configuration.yaml entry
+Each room creates these entities by default:
+
+- <code>sensor.&lt;room&gt;_iaq_index</code>: 1-65, where higher is better.
+- <code>sensor.&lt;room&gt;_iaq_level</code>: Excellent, Good, Fair, Poor, or Inadequate.
+
+The index entity includes source values, source status, active issues, contributing source scores, and the active guidance profile as attributes.
+
+## Supported Sources
+
+| Source | Sensor unit |
+| --- | --- |
+| Temperature | C or F |
+| Relative humidity | % |
+| Carbon dioxide | ppm, ppb, mg/m3, or ug/m3 |
+| Carbon monoxide | ppm, ppb, mg/m3, or ug/m3 |
+| Nitrogen dioxide | ppm, ppb, mg/m3, or ug/m3 |
+| Formaldehyde | ppm, ppb, mg/m3, or ug/m3 |
+| Radon | Bq/m3 |
+| PM | mg/m3 or ug/m3 |
+| TVOC | ppm, ppb, mg/m3, or ug/m3 |
+| VOC Index | unitless sensor index |
+
+Only one of TVOC or VOC Index can be configured for a room. CO and PM accept one entity or a comma-separated list of entities.
+
+## YAML Import and Migration
+
+UI configuration is the recommended setup path. Existing YAML configuration using the <code>iaqca:</code> key is imported into config entries after Home Assistant starts.
+
+The legacy <code>iaquk:</code> YAML key is also imported one-way for migration compatibility. It is deprecated; update it to <code>iaqca:</code> after confirming the imported room appears correctly.
+
+~~~yaml
 iaqca:
   kitchen:
+    name: Kitchen
     sources:
-      temperature: sensor.kitchen_temperature
-      humidity: sensor.kitchen_humidity
-      co2: sensor.kitchen_eco2
-      tvoc: sensor.kitchen_tvoc
-    sensors:
-      - iaq_level
-
-  livingroom:
-    name: "Living Room"
-    sources:
-      hcho: sensor.livingroom_formaldehyde
+      temperature: sensor.hood_air_temperature
+      humidity: sensor.hood_air_humidity
+      co2: sensor.hood_air_carbon_dioxide
+      tvoc: sensor.hood_air_volatile_organic_compounds
       pm:
-        - sensor.livingroom_pm25
-        - sensor.livingroom_pm10
-```
+        - sensor.hood_air_pm2_5
+~~~
 
-<p align="center">* * *</p>
-I put a lot of work into making this repo and component available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
-<p align="center"><a href="https://www.patreon.com/join/limych?" target="_blank"><img src="http://khrolenok.ru/support_patreon.png" alt="Patreon" width="250" height="48"></a></p>
+## Simple Canadian Guidance Profile
 
-| Bitcoin                                                                                                                                                                                                                  | Ethereum                                                                                                                         | Monero                                                                                                                                                                              |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <a href="https://sochain.com/address/BTC/16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts" target="_blank"><img alt="Bitcoin" src="http://khrolenok.ru/support_btc.png" width="200"/></a><pre>16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts</pre> | <img alt="Ethereum" src="http://khrolenok.ru/support_eth.png" width="200"/><pre>0x9FB9429f9A85Fa2395Bb59e50452F64977435d61</pre> | <img alt="Monero" src="http://khrolenok.ru/support_xmr.png" width="200"/><pre>48Kt2ksKYxHg46T5sJ7feBXtndHhxk1JgYJwtwGG8Jb7asNFShRwUDtFgX2UvVThXa5GGyGbMCfNJX7YwFZBRDX43q4mT83</pre> |
+IAQCA intentionally stays lightweight. It uses the configured sensor states directly and does not require an outdoor monitor, a separate database, or additional helper entities.
 
-### Configuration variables
-
-Each room in the settings is defined by its own named group of parameters. You can specify the friendly name of this group (room), the sensors involved in the calculations, and which sensors you need to create for the output.
-
-You can create as many groups as you need. But each group must have an unique name.
-
-**name**:\
-  _(string) (Optional) (Default value: deslugified group name)_\
-  Friendly name to use in the frontend.
-
-**sources**:\
-  _(dictionary) (Required)_\
-  Dictionary of sensors involved in the calculations. At least one sensor must be specified.
-
-> **temperature**:\
-> _(string) (Optional)_\
-> Room temperature sensor entity ID.\
-> Required sensor's unit of measurement: °C or °F
->
-> **humidity**:\
-> _(string) (Optional)_\
-> Room humidity sensor entity ID.\
-> Required sensor's unit of measurement: %
->
-> **co2**:\
-> _(string) (Optional)_\
-> Room Carbon Dioxide (CO<sub>2</sub>) sensor entity ID.\
-> Required sensor's unit of measurement: ppm, ppb, mg/m<sup>3</sup> or µg/m<sup>3</sup>
->
-> **co**:\
-> _(string) (Optional)_\
-> Room Carbon Monoxide (CO) sensor entity ID.\
-> Required sensor's unit of measurement: ppm, ppb, mg/m<sup>3</sup> or µg/m<sup>3</sup>
->
-> **no2**:\
-> _(string) (Optional)_\
-> Room Nitrogen Dioxide (NO<sub>2</sub>) sensor entity ID.\
-> Required sensor's unit of measurement: ppm, ppb, mg/m<sup>3</sup> or µg/m<sup>3</sup>
->
-> **tvoc**:\
-> _(string) (Optional)_\
-> Room tVOC sensor entity ID.\
-> Required sensor's unit of measurement: ppm, ppb, mg/m<sup>3</sup> or µg/m<sup>3</sup>\
-> *Note:* Only one VOC source are allowed at once: **tvoc** or **voc_index**.
->
-> **voc_index**:\
-> _(string) (Optional)_\
-> Room VOC sensor entity ID.\
-> Required sensor's unit of measurement: None\
-> Especially for SGP40 and SGP41 gas sensors that return a VOC value as an index from 0 to 500.\
-> *Note:* Only one VOC source are allowed at once: **tvoc** or **voc_index**.
->
-> **hcho**:\
-> _(string) (Optional)_\
-> Room Formaldehyde (HCHO; CH<sub>2</sub>O) sensor entity ID.\
-> Required sensor's unit of measurement: ppm, ppb, mg/m<sup>3</sup> or µg/m<sup>3</sup>
->
-> **radon**:\
-> _(string) (Optional)_\
-> Room Radon (Rn) sensor entity ID.\
-> Required sensor's unit of measurement: Bq/m<sup>3</sup>
->
-> **pm**:\
-> _(string | list) (Optional)_\
-> Room particulate matter sensors entity IDs.\
-> Required sensor's unit of measurement: mg/m<sup>3</sup> or µg/m<sup>3</sup>
-
-**sensors**:\
-  _(list) (Optional) (Default value: all sensors below)_\
-  List of sensors  you need to create for the output. The following sensors can be added:
-
-> **iaq_index**:\
-> The sensor displays the air quality in numerical form from 1 to 65. The higher the value, the better the air quality.
->
-> **iaq_level**:\
-> The sensor shows the air quality in a human-readable form. Possible values: Excellent, Good, Fair, Poor, Inadequate.
-
-**_Note_**:\
-The icon of `iaq_level` sensor changes its image depending on the value of the sensor.
-
-## Track updates
-
-You can automatically track new versions of this component and update it by [HACS][hacs].
+- Canadian residential guidance is applied where a direct contaminant guideline exists.
+- PM2.5 and VOC readings remain useful operational signals for cooking, smoke, ventilation, and source events.
+- The score is suitable for Home Assistant automations, but it is not a health diagnosis or regulatory compliance determination.
 
 ## Troubleshooting
 
-To enable debug logs use this configuration:
-```yaml
-# Example configuration.yaml entry
+Enable integration debug logging:
+
+~~~yaml
 logger:
-  default: info
   logs:
     custom_components.iaqca: debug
-```
-... then restart HA.
+~~~
 
-## Contributions are welcome!
+Then restart Home Assistant and review **Settings > System > Logs**. The index attributes identify unavailable sources, invalid units, converted values, and active source issues.
 
-This is an active open-source project. We are always open to people who want to
-use the code or contribute to it.
+## Upstream Credit
 
-We have set up a separate document containing our
-[contribution guidelines](CONTRIBUTING.md).
-
-Thank you for being involved! :heart_eyes:
-
-## Authors & contributors
-
-The original setup of this component is by [Andrey "Limych" Khrolenok](https://github.com/Limych).
-
-For a full list of all authors and contributors,
-check [the contributor's page][contributors].
-
-This Home Assistant custom component was created and is updated using the [HA-Blueprint template](https://github.com/Limych/ha-blueprint). You can use this template to maintain your own Home Assistant custom components.
+IAQCA is based on [Indoor Air Quality UK Index](https://github.com/Limych/ha-iaquk) by [Andrey Khrolenok (@Limych)](https://github.com/Limych). This fork retains the upstream MIT license and acknowledges the original project's architecture and foundation.
 
 ## License
 
-MIT License
-
-Copyright (c) 2019–2021 Andrey "Limych" Khrolenok
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-***
-
-[component]: https://github.com/Wheemer/ha-iaqca
-[commits-shield]: https://img.shields.io/github/commit-activity/y/Wheemer/ha-iaqca.svg?style=popout
-[commits]: https://github.com/Wheemer/ha-iaqca/commits/master
-[hacs-shield]: https://img.shields.io/badge/HACS-Default-orange.svg?style=popout
-[hacs]: https://hacs.xyz
-[exampleimg]: https://github.com/Wheemer/ha-iaqca/raw/dev/iaqca.jpg
-[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=popout
-[forum]: https://community.home-assistant.io/t/indoor-air-quality-sensor-component/160474
-[license]: https://github.com/Wheemer/ha-iaqca/blob/main/LICENSE
-[license-shield]: https://img.shields.io/github/license/Wheemer/ha-iaqca.svg?style=popout
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Andrey%20Khrolenok%20%40Limych-blue.svg?style=popout
-[releases-shield]: https://img.shields.io/github/release/Wheemer/ha-iaqca.svg?style=popout
-[releases]: https://github.com/Wheemer/ha-iaqca/releases
-[releases-latest]: https://github.com/Wheemer/ha-iaqca/releases/latest
-[user_profile]: https://github.com/Limych
-[report_bug]: https://github.com/Wheemer/ha-iaqca/issues/new?template=bug_report.md
-[suggest_idea]: https://github.com/Wheemer/ha-iaqca/issues/new?template=feature_request.md
-[contributors]: https://github.com/Wheemer/ha-iaqca/graphs/contributors
-[patreon-shield]: https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DLimych%26type%3Dpatrons&style=popout
-[patreon]: https://www.patreon.com/join/limych
+MIT. See [LICENSE](LICENSE).
