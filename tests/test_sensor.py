@@ -34,7 +34,7 @@ async def test_entity_initialization(hass: HomeAssistant):
     entity.hass = hass
 
     assert entity.unique_id == "test_iaq_index"
-    assert entity.name == "Test Indoor Air Quality Index"
+    assert entity.name == "Test Canadian Air Quality Index"
     assert entity.should_poll is True
     assert entity.available is True
     assert entity.device_class == SensorDeviceClass.AQI
@@ -48,7 +48,7 @@ async def test_entity_initialization(hass: HomeAssistant):
     entity.hass = hass
 
     assert entity.unique_id == "test_iaq_level"
-    assert entity.name == "Test Indoor Air Quality Level"
+    assert entity.name == "Test Canadian Air Quality Level"
     assert entity.should_poll is True
     assert entity.available is True
     assert entity.device_class == "iaqca__level"

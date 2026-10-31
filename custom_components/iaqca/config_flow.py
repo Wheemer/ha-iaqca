@@ -1,4 +1,4 @@
-"""Config flow for Indoor Air Quality Canada Index."""
+"""Config flow for Canadian Air Quality Index."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# Indoor Air Quality Canada Index
+# Canadian Air Quality Index
 
 ### A simple Canadian-guidance-based indoor air quality integration for Home Assistant
 
@@ -14,7 +14,7 @@
 
 </div>
 
-Indoor Air Quality Canada Index (IAQCA) evaluates configured live sensors in one room and exposes a numeric index plus a readable level. It is designed for practical home use: dashboards, ventilation control, source alerts, and automation conditions.
+Canadian Air Quality Index (IAQCA) evaluates configured live sensors in one room and exposes a numeric index plus a readable level. It is designed for practical home use: dashboards, ventilation control, source alerts, and automation conditions.
 
 This is a maintained fork of [Limych/ha-iaquk](https://github.com/Limych/ha-iaquk). It preserves the upstream MIT license and credits the original project while converting the package, configuration flow, documentation, and guidance profile for Canada.
 
@@ -35,7 +35,7 @@ This is a maintained fork of [Limych/ha-iaquk](https://github.com/Limych/ha-iaqu
 1. Open **HACS** in Home Assistant.
 2. Open the menu and choose **Custom repositories**.
 3. Add <code>https://github.com/Wheemer/ha-iaqca</code> with category **Integration**.
-4. Search for **Indoor Air Quality Canada Index** and install it.
+4. Search for **Canadian Air Quality Index** and install it.
 5. Restart Home Assistant.
 
 ### Manual install
@@ -49,7 +49,7 @@ Use the Home Assistant integration UI:
 
 1. Open **Settings > Devices & services**.
 2. Select **Add integration**.
-3. Search for **Indoor Air Quality Canada Index**.
+3. Search for **Canadian Air Quality Index**.
 4. Give the room a name and select the sensor entities you want to use.
 
 Each room creates these entities by default:

@@ -1,4 +1,4 @@
-"""Diagnostics support for Indoor Air Quality UK Index."""
+"""Diagnostics support for Canadian Air Quality Index."""
 
 from __future__ import annotations
 

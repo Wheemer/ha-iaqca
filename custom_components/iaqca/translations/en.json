@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Indoor Air Quality Canada Index",
+        "title": "Canadian Air Quality Index",
         "description": "Create a calculated indoor air quality score from existing Home Assistant sensors.",
         "data": {
           "object_id": "Object ID",
@@ -27,7 +27,7 @@
         }
       },
       "reconfigure": {
-        "title": "Reconfigure Indoor Air Quality Canada Index",
+        "title": "Reconfigure Canadian Air Quality Index",
         "description": "Update the sources used to calculate this IAQ score.",
         "data": {
           "object_id": "Object ID",
@@ -62,7 +62,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Indoor Air Quality Canada Index Options",
+        "title": "Canadian Air Quality Index Options",
         "description": "Update the sources used to calculate this IAQ score.",
         "data": {
           "object_id": "Object ID",
@@ -92,10 +92,10 @@
   "entity": {
     "sensor": {
       "iaq_index": {
-        "name": "Indoor Air Quality Index"
+        "name": "Canadian Air Quality Index"
       },
       "iaq_level": {
-        "name": "Indoor Air Quality Level",
+        "name": "Canadian Air Quality Level",
         "state": {
           "Inadequate": "Inadequate",
           "Poor": "Poor",

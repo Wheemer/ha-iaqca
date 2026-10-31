@@ -5,7 +5,7 @@ from typing import Final
 from homeassistant.components.sensor import DOMAIN as SENSOR
 
 # Base component constants
-NAME: Final = "Indoor Air Quality Canada Index"
+NAME: Final = "Canadian Air Quality Index"
 DOMAIN: Final = "iaqca"
 LEGACY_DOMAIN: Final = "iaquk"
 VERSION: Final = "1.8.0"
@@ -39,8 +39,8 @@ SENSOR_INDEX: Final = "iaq_index"
 SENSOR_LEVEL: Final = "iaq_level"
 
 SENSORS: Final = {
-    SENSOR_INDEX: "Indoor Air Quality Index",
-    SENSOR_LEVEL: "Indoor Air Quality Level",
+    SENSOR_INDEX: "Canadian Air Quality Index",
+    SENSOR_LEVEL: "Canadian Air Quality Level",
 }
 
 # Configuration and options
