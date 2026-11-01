@@ -1,5 +1,9 @@
 name: No Response
 
+permissions:
+  issues: write
+  pull-requests: write
+
 # Both `issue_comment` and `scheduled` event types are required for this Action
 # to work properly.
 on:
