@@ -305,10 +305,6 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
 
     return vol.Schema(
         {
-            vol.Optional(
-                CONF_CREATE_INDEX,
-                default=SENSOR_INDEX in defaults.get(CONF_SENSORS, SENSORS),
-            ): BooleanSelector(),
             **{
                 vol.Optional(
                     source,
@@ -318,6 +314,25 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
                 ): _source_selector(hass, source)
                 for source in SOURCE_FIELDS
             },
+            vol.Optional(
+                CONF_CREATE_INDEX,
+                default=SENSOR_INDEX in defaults.get(CONF_SENSORS, SENSORS),
+            ): BooleanSelector(),
+        }
+    )
+
+
+def _review_schema(
+    hass: HomeAssistant, sources: dict[str, str | list[str]]
+) -> vol.Schema:
+    """Return editable source selectors prefilled with detected values."""
+    return vol.Schema(
+        {
+            vol.Optional(
+                source,
+                default=sources.get(source, [] if source in SOURCES_LISTS else ""),
+            ): _source_selector(hass, source)
+            for source in SOURCE_FIELDS
         }
     )
 
@@ -369,13 +384,38 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._source_device_id = device_id
                 self._detected_sources = sources
                 self._suggested_name = _device_name(self.hass, device_id)
-                return await self.async_step_confirm()
+                return await self.async_step_review()
             errors["base"] = "no_compatible_sensors"
 
         return self.async_show_form(
             step_id="user",
             data_schema=_device_schema(),
             errors=errors,
+        )
+
+    async def async_step_review(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Let the user review and adjust automatically discovered sources."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            form_input = {**user_input, CONF_CREATE_INDEX: True}
+            _, errors = _parse_user_input(self.hass, form_input)
+            if not errors:
+                self._detected_sources = {
+                    source: user_input[source]
+                    for source in SOURCE_FIELDS
+                    if user_input.get(source)
+                }
+                return await self.async_step_confirm()
+
+        return self.async_show_form(
+            step_id="review",
+            data_schema=_review_schema(self.hass, self._detected_sources),
+            errors=errors,
+            description_placeholders={
+                "detected_sources": str(len(self._detected_sources))
+            },
         )
 
     async def async_step_confirm(

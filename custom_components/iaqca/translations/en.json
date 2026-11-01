@@ -19,6 +19,26 @@
           "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created."
         }
       },
+      "review": {
+        "title": "Review detected sensors",
+        "description": "IAQCA found {detected_sources} compatible source types. Review or change any selection before continuing.",
+        "data": {
+          "temperature": "Temperature sensor",
+          "humidity": "Humidity sensor",
+          "co2": "Carbon dioxide sensor",
+          "co": "Carbon monoxide sensor(s)",
+          "no2": "Nitrogen dioxide sensor",
+          "tvoc": "TVOC sensor",
+          "voc_index": "VOC index sensor",
+          "hcho": "Formaldehyde sensor",
+          "radon": "Radon sensor",
+          "pm": "Particulate matter sensor(s)"
+        },
+        "data_description": {
+          "co": "Multiple sensors are allowed; the highest reading is used.",
+          "pm": "Multiple sensors are allowed; their values are combined for scoring."
+        }
+      },
       "reconfigure": {
         "title": "Reconfigure Canadian Air Quality Index",
         "description": "Update the sources used to calculate this IAQ score.",
