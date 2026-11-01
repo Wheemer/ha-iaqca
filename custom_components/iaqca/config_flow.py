@@ -217,7 +217,10 @@ def _source_selector(
             )
         ]
         for entity_id in _csv(selected):
-            if entity_id in hass.states and entity_id not in config["include_entities"]:
+            if (
+                hass.states.get(entity_id) is not None
+                and entity_id not in config["include_entities"]
+            ):
                 config["include_entities"].append(entity_id)
 
     return EntitySelector(config)
