@@ -11,8 +11,16 @@ from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN, SensorDevic
 from homeassistant.const import CONF_NAME, CONF_SENSORS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
-from homeassistant.helpers.selector import BooleanSelector, EntitySelector, EntitySelectorConfig
+from homeassistant.helpers import (
+    area_registry as ar,
+    device_registry as dr,
+    entity_registry as er,
+)
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
+)
 from homeassistant.util import slugify
 
 from . import SOURCES, SOURCES_LISTS, check_voc_keys
@@ -115,7 +123,9 @@ def _parse_user_input(
         ):
             sensor_ids.append(SENSOR_INDEX)
 
-    configured_object_id = user_input.get(CONF_OBJECT_ID) or defaults.get(CONF_OBJECT_ID)
+    configured_object_id = user_input.get(CONF_OBJECT_ID) or defaults.get(
+        CONF_OBJECT_ID
+    )
     if configured_object_id:
         try:
             object_id = cv.slug(configured_object_id)
@@ -128,7 +138,9 @@ def _parse_user_input(
 
     data = {
         CONF_OBJECT_ID: object_id,
-        CONF_NAME: user_input.get(CONF_NAME) or defaults.get(CONF_NAME) or generated_name,
+        CONF_NAME: user_input.get(CONF_NAME)
+        or defaults.get(CONF_NAME)
+        or generated_name,
         CONF_SOURCES: sources,
         CONF_SENSORS: sensor_ids,
     }
@@ -152,13 +164,22 @@ def _generate_entry_identity(
         if area_id is None and entity_entry.device_id is not None:
             device_entry = device_registry.async_get(entity_entry.device_id)
             area_id = device_entry.area_id if device_entry is not None else None
-        if area_id is not None and (area_entry := area_registry.async_get_area(area_id)):
+        if area_id is not None and (
+            area_entry := area_registry.async_get_area(area_id)
+        ):
             area_name = area_entry.name
             break
 
     base = f"{slugify(area_name)}_iaqca" if area_name else "iaqca"
-    title = f"{area_name} Canadian Air Quality Index" if area_name else "Canadian Air Quality Index"
-    used_ids = {entry.data.get(CONF_OBJECT_ID) for entry in hass.config_entries.async_entries(DOMAIN)}
+    title = (
+        f"{area_name} Canadian Air Quality Index"
+        if area_name
+        else "Canadian Air Quality Index"
+    )
+    used_ids = {
+        entry.data.get(CONF_OBJECT_ID)
+        for entry in hass.config_entries.async_entries(DOMAIN)
+    }
     candidate = base
     suffix = 2
     while candidate in used_ids:
