@@ -5,9 +5,7 @@
         "title": "Canadian Air Quality Index",
         "description": "Create a calculated indoor air quality score from existing Home Assistant sensors.",
         "data": {
-          "object_id": "Object ID",
-          "name": "Name",
-          "sensors": "Created sensors",
+          "create_index": "Create numeric AQI sensor",
           "temperature": "Temperature sensor",
           "humidity": "Humidity sensor",
           "co2": "Carbon dioxide sensor",
@@ -20,8 +18,7 @@
           "pm": "Particulate matter sensor(s)"
         },
         "data_description": {
-          "object_id": "Stable slug used for entity IDs, for example garage or livingroom.",
-          "sensors": "Comma-separated list: iaq_level, iaq_index. Leave blank to create both.",
+          "create_index": "The Canadian Air Quality Level sensor is always created.",
           "co": "Comma-separated sensor entity IDs. If multiple are provided, the highest reading is used.",
           "pm": "Comma-separated sensor entity IDs. Values are summed before scoring."
         }
@@ -30,9 +27,7 @@
         "title": "Reconfigure Canadian Air Quality Index",
         "description": "Update the sources used to calculate this IAQ score.",
         "data": {
-          "object_id": "Object ID",
-          "name": "Name",
-          "sensors": "Created sensors",
+          "create_index": "Create numeric AQI sensor",
           "temperature": "Temperature sensor",
           "humidity": "Humidity sensor",
           "co2": "Carbon dioxide sensor",
@@ -65,9 +60,7 @@
         "title": "Canadian Air Quality Index Options",
         "description": "Update the sources used to calculate this IAQ score.",
         "data": {
-          "object_id": "Object ID",
-          "name": "Name",
-          "sensors": "Created sensors",
+          "create_index": "Create numeric AQI sensor",
           "temperature": "Temperature sensor",
           "humidity": "Humidity sensor",
           "co2": "Carbon dioxide sensor",

@@ -11,7 +11,17 @@ from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN, SensorDevic
 from homeassistant.const import CONF_NAME, CONF_SENSORS
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
+from homeassistant.helpers import (
+    area_registry as ar,
+    device_registry as dr,
+    entity_registry as er,
+)
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
+)
+from homeassistant.util import slugify
 
 from . import SOURCES, SOURCES_LISTS, check_voc_keys
 from .const import (
@@ -28,10 +38,13 @@ from .const import (
     CONF_TVOC,
     CONF_VOC_INDEX,
     DOMAIN,
+    SENSOR_INDEX,
+    SENSOR_LEVEL,
     SENSORS,
 )
 
 SOURCE_FIELDS: Final = [*SOURCES]
+CONF_CREATE_INDEX: Final = "create_index"
 
 SOURCE_DEVICE_CLASSES: Final = {
     CONF_TEMPERATURE: [SensorDeviceClass.TEMPERATURE],
@@ -70,9 +83,12 @@ def _csv(value: str | list[str] | None) -> list[str]:
 
 
 def _parse_user_input(
+    hass: HomeAssistant,
     user_input: dict[str, Any],
+    defaults: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Validate form input and return config-entry data plus field errors."""
+    defaults = defaults or {}
     errors: dict[str, str] = {}
     sources: dict[str, str | list[str]] = {}
 
@@ -99,22 +115,79 @@ def _parse_user_input(
     invalid_sensors = [sensor for sensor in sensor_ids if sensor not in SENSORS]
     if invalid_sensors:
         errors[CONF_SENSORS] = "invalid_sensor"
-    if not sensor_ids:
-        sensor_ids = list(SENSORS)
+    elif not sensor_ids:
+        sensor_ids = [SENSOR_LEVEL]
+        if user_input.get(
+            CONF_CREATE_INDEX,
+            SENSOR_INDEX in defaults.get(CONF_SENSORS, SENSORS),
+        ):
+            sensor_ids.append(SENSOR_INDEX)
 
-    try:
-        object_id = cv.slug(user_input[CONF_OBJECT_ID])
-    except vol.Invalid:
-        errors[CONF_OBJECT_ID] = "invalid_object_id"
-        object_id = user_input.get(CONF_OBJECT_ID, "")
+    configured_object_id = user_input.get(CONF_OBJECT_ID) or defaults.get(
+        CONF_OBJECT_ID
+    )
+    if configured_object_id:
+        try:
+            object_id = cv.slug(configured_object_id)
+        except vol.Invalid:
+            errors[CONF_OBJECT_ID] = "invalid_object_id"
+            object_id = configured_object_id
+        generated_name = ""
+    else:
+        object_id, generated_name = _generate_entry_identity(hass, sources)
 
     data = {
         CONF_OBJECT_ID: object_id,
-        CONF_NAME: user_input.get(CONF_NAME) or object_id.replace("_", " ").title(),
+        CONF_NAME: user_input.get(CONF_NAME)
+        or defaults.get(CONF_NAME)
+        or generated_name,
         CONF_SOURCES: sources,
         CONF_SENSORS: sensor_ids,
     }
     return data, errors
+
+
+def _generate_entry_identity(
+    hass: HomeAssistant, sources: dict[str, str | list[str]]
+) -> tuple[str, str]:
+    """Create a stable internal ID and title without exposing technical fields."""
+    entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
+    area_registry = ar.async_get(hass)
+    area_name = None
+    for source in sources.values():
+        entity_id = source[0] if isinstance(source, list) else source
+        entity_entry = entity_registry.async_get(entity_id)
+        if entity_entry is None:
+            continue
+        area_id = entity_entry.area_id
+        if area_id is None and entity_entry.device_id is not None:
+            device_entry = device_registry.async_get(entity_entry.device_id)
+            area_id = device_entry.area_id if device_entry is not None else None
+        if area_id is not None and (
+            area_entry := area_registry.async_get_area(area_id)
+        ):
+            area_name = area_entry.name
+            break
+
+    base = f"{slugify(area_name)}_iaqca" if area_name else "iaqca"
+    title = (
+        f"{area_name} Canadian Air Quality Index"
+        if area_name
+        else "Canadian Air Quality Index"
+    )
+    used_ids = {
+        entry.data.get(CONF_OBJECT_ID)
+        for entry in hass.config_entries.async_entries(DOMAIN)
+    }
+    candidate = base
+    suffix = 2
+    while candidate in used_ids:
+        candidate = f"{base}_{suffix}"
+        suffix += 1
+    if suffix > 2:
+        title = f"{title} {suffix - 1}"
+    return candidate, title
 
 
 def _source_selector(hass: HomeAssistant, source: str) -> EntitySelector:
@@ -150,16 +223,10 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
 
     return vol.Schema(
         {
-            vol.Required(CONF_OBJECT_ID, default=defaults.get(CONF_OBJECT_ID, "")): str,
-            vol.Optional(CONF_NAME, default=defaults.get(CONF_NAME, "")): str,
             vol.Optional(
-                CONF_SENSORS,
-                default=(
-                    defaults.get(CONF_SENSORS, "")
-                    if isinstance(defaults.get(CONF_SENSORS), str)
-                    else ", ".join(defaults.get(CONF_SENSORS, SENSORS))
-                ),
-            ): str,
+                CONF_CREATE_INDEX,
+                default=SENSOR_INDEX in defaults.get(CONF_SENSORS, SENSORS),
+            ): BooleanSelector(),
             **{
                 vol.Optional(
                     source,
@@ -190,7 +257,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             form_input = user_input
 
-        data, errors = _parse_user_input(form_input)
+        data, errors = _parse_user_input(self.hass, form_input)
         if errors:
             return self.async_abort(reason="invalid_sources")
 
@@ -214,7 +281,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            data, errors = _parse_user_input(user_input)
+            data, errors = _parse_user_input(self.hass, user_input)
             if not errors:
                 await self.async_set_unique_id(data[CONF_OBJECT_ID])
                 self._abort_if_unique_id_configured()
@@ -235,7 +302,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            data, errors = _parse_user_input(user_input)
+            data, errors = _parse_user_input(self.hass, user_input, defaults)
             if not errors:
                 self.hass.config_entries.async_update_entry(
                     entry, title=data[CONF_NAME], data=data, options={}
@@ -273,7 +340,7 @@ class IaqcaOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            data, errors = _parse_user_input(user_input)
+            data, errors = _parse_user_input(self.hass, user_input, defaults)
             if not errors:
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
