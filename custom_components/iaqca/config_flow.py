@@ -18,6 +18,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.selector import (
     BooleanSelector,
+    DeviceSelector,
     EntitySelector,
     EntitySelectorConfig,
 )
@@ -45,6 +46,7 @@ from .const import (
 
 SOURCE_FIELDS: Final = [*SOURCES]
 CONF_CREATE_INDEX: Final = "create_index"
+CONF_SOURCE_DEVICE: Final = "source_device"
 
 SOURCE_DEVICE_CLASSES: Final = {
     CONF_TEMPERATURE: [SensorDeviceClass.TEMPERATURE],
@@ -216,6 +218,86 @@ def _source_selector(hass: HomeAssistant, source: str) -> EntitySelector:
     return EntitySelector(config)
 
 
+def _matches_source(source: str, entity_id: str, device_class: str | None) -> bool:
+    """Return whether a sensor is compatible with an IAQ source."""
+    if device_classes := SOURCE_DEVICE_CLASSES.get(source):
+        return device_class in {item.value for item in device_classes}
+    return any(keyword in entity_id.lower() for keyword in SOURCE_KEYWORDS[source])
+
+
+def _detect_device_sources(
+    hass: HomeAssistant, device_id: str
+) -> dict[str, str | list[str]]:
+    """Discover compatible sensor entities from a device and its area."""
+    entity_registry = er.async_get(hass)
+    device_registry = dr.async_get(hass)
+    device_entry = device_registry.async_get(device_id)
+    area_id = device_entry.area_id if device_entry is not None else None
+    candidates: list[tuple[int, str, str | None]] = []
+
+    for state in hass.states.async_all(SENSOR_DOMAIN):
+        registry_entry = entity_registry.async_get(state.entity_id)
+        if registry_entry is None:
+            continue
+        priority = None
+        if registry_entry.device_id == device_id:
+            priority = 0
+        elif area_id is not None:
+            entity_area = registry_entry.area_id
+            if entity_area is None and registry_entry.device_id is not None:
+                entity_device = device_registry.async_get(registry_entry.device_id)
+                entity_area = (
+                    entity_device.area_id if entity_device is not None else None
+                )
+            if entity_area == area_id:
+                priority = 1
+        if priority is not None:
+            candidates.append(
+                (priority, state.entity_id, state.attributes.get("device_class"))
+            )
+
+    candidates.sort()
+    sources: dict[str, str | list[str]] = {}
+    for source in SOURCE_FIELDS:
+        matching = [
+            entity_id
+            for _, entity_id, device_class in candidates
+            if _matches_source(source, entity_id, device_class)
+        ]
+        if source in SOURCES_LISTS and matching:
+            sources[source] = matching
+        elif matching:
+            sources[source] = matching[0]
+
+    if CONF_TVOC in sources:
+        sources.pop(CONF_VOC_INDEX, None)
+    return sources
+
+
+def _device_name(hass: HomeAssistant, device_id: str) -> str:
+    """Return a friendly default title for a selected source device."""
+    device_entry = dr.async_get(hass).async_get(device_id)
+    if device_entry is None:
+        return "Canadian Air Quality Index"
+    name = device_entry.name_by_user or device_entry.name
+    return f"{name} Canadian Air Quality Index"
+
+
+def _device_schema() -> vol.Schema:
+    """Return the first setup step schema."""
+    return vol.Schema({vol.Required(CONF_SOURCE_DEVICE): DeviceSelector()})
+
+
+def _confirm_schema(name: str) -> vol.Schema:
+    """Return the short confirmation step schema."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_NAME, default=name): str,
+            vol.Optional(CONF_CREATE_INDEX, default=True): BooleanSelector(),
+        }
+    )
+
+
 def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.Schema:
     """Return the config-flow form schema."""
     defaults = defaults or {}
@@ -277,20 +359,44 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle manual setup."""
+        """Choose the device used to discover IAQ source sensors."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            data, errors = _parse_user_input(self.hass, user_input)
+            device_id = user_input[CONF_SOURCE_DEVICE]
+            sources = _detect_device_sources(self.hass, device_id)
+            if sources:
+                self._source_device_id = device_id
+                self._detected_sources = sources
+                self._suggested_name = _device_name(self.hass, device_id)
+                return await self.async_step_confirm()
+            errors["base"] = "no_compatible_sensors"
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_device_schema(),
+            errors=errors,
+        )
+
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Confirm generated name and optional numeric sensor."""
+        if user_input is not None:
+            form_input = {**self._detected_sources, **user_input}
+            data, errors = _parse_user_input(self.hass, form_input)
             if not errors:
+                data[CONF_SOURCE_DEVICE] = self._source_device_id
                 await self.async_set_unique_id(data[CONF_OBJECT_ID])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=data[CONF_NAME], data=data)
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=_schema(self.hass, user_input),
-            errors=errors,
+            step_id="confirm",
+            data_schema=_confirm_schema(self._suggested_name),
+            description_placeholders={
+                "detected_sources": str(len(self._detected_sources))
+            },
         )
 
     async def async_step_reconfigure(

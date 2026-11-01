@@ -2,25 +2,21 @@
   "config": {
     "step": {
       "user": {
-        "title": "Canadian Air Quality Index",
-        "description": "Create a calculated indoor air quality score from existing Home Assistant sensors.",
+        "title": "Choose air-quality device",
+        "description": "Choose one device. Canadian Air Quality Index will automatically find compatible sensors on that device and in its area.",
         "data": {
-          "create_index": "Create numeric AQI sensor",
-          "temperature": "Temperature sensor",
-          "humidity": "Humidity sensor",
-          "co2": "Carbon dioxide sensor",
-          "co": "Carbon monoxide sensor(s)",
-          "no2": "Nitrogen dioxide sensor",
-          "tvoc": "TVOC sensor",
-          "voc_index": "VOC index sensor",
-          "hcho": "Formaldehyde sensor",
-          "radon": "Radon sensor",
-          "pm": "Particulate matter sensor(s)"
+          "source_device": "Air-quality device"
+        }
+      },
+      "confirm": {
+        "title": "Confirm Canadian Air Quality Index",
+        "description": "Detected {detected_sources} compatible source types. You can change the name below before creating the integration.",
+        "data": {
+          "name": "Name",
+          "create_index": "Add numeric Canadian AQI sensor"
         },
         "data_description": {
-          "create_index": "The Canadian Air Quality Level sensor is always created.",
-          "co": "Comma-separated sensor entity IDs. If multiple are provided, the highest reading is used.",
-          "pm": "Comma-separated sensor entity IDs. Values are summed before scoring."
+          "create_index": "Creates the 1-65 Canadian Air Quality Index sensor. The Canadian Air Quality Level sensor is always created."
         }
       },
       "reconfigure": {
@@ -51,7 +47,8 @@
       "invalid_object_id": "Enter a valid slug-style object ID.",
       "invalid_sensor": "Use iaq_level, iaq_index, or both.",
       "invalid_sources": "Use either TVOC or VOC Index, not both.",
-      "missing_sources": "Add at least one source sensor."
+      "missing_sources": "Add at least one source sensor.",
+      "no_compatible_sensors": "No compatible air-quality sensors were found on this device or in its area."
     }
   },
   "options": {
