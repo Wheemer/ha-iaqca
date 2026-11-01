@@ -8,7 +8,7 @@ from homeassistant.components.sensor import DOMAIN as SENSOR
 NAME: Final = "Canadian Air Quality Index"
 DOMAIN: Final = "iaqca"
 LEGACY_DOMAIN: Final = "iaquk"
-VERSION: Final = "1.8.0"
+VERSION: Final = "1.8.1"
 ISSUE_URL: Final = "https://github.com/Wheemer/ha-iaqca/issues"
 
 STARTUP_MESSAGE: Final = f"""
