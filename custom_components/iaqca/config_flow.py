@@ -7,14 +7,57 @@ from typing import Any, Final
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN, SensorDeviceClass
 from homeassistant.const import CONF_NAME, CONF_SENSORS
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
 from . import SOURCES, SOURCES_LISTS, check_voc_keys
-from .const import CONF_OBJECT_ID, CONF_SOURCES, DOMAIN, SENSORS
+from .const import (
+    CONF_CO,
+    CONF_CO2,
+    CONF_HCHO,
+    CONF_HUMIDITY,
+    CONF_NO2,
+    CONF_OBJECT_ID,
+    CONF_PM,
+    CONF_RADON,
+    CONF_SOURCES,
+    CONF_TEMPERATURE,
+    CONF_TVOC,
+    CONF_VOC_INDEX,
+    DOMAIN,
+    SENSORS,
+)
 
 SOURCE_FIELDS: Final = [*SOURCES]
+
+SOURCE_DEVICE_CLASSES: Final = {
+    CONF_TEMPERATURE: [SensorDeviceClass.TEMPERATURE],
+    CONF_HUMIDITY: [SensorDeviceClass.HUMIDITY],
+    CONF_CO2: [SensorDeviceClass.CO2],
+    CONF_CO: [SensorDeviceClass.CO],
+    CONF_NO2: [SensorDeviceClass.NITROGEN_DIOXIDE],
+    CONF_TVOC: [
+        SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
+        SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+    ],
+    CONF_RADON: [SensorDeviceClass.RADON],
+    CONF_PM: [
+        SensorDeviceClass.PM1,
+        SensorDeviceClass.PM25,
+        SensorDeviceClass.PM10,
+        SensorDeviceClass.PM4,
+    ],
+}
+
+# Home Assistant does not define device classes for formaldehyde or VOC index.
+# Restrict those selectors to entities whose ID or name explicitly identifies them.
+SOURCE_KEYWORDS: Final = {
+    CONF_VOC_INDEX: ("voc_index", "voc index"),
+    CONF_HCHO: ("hcho", "formaldehyde"),
+}
 
 
 def _csv(value: str | list[str] | None) -> list[str]:
@@ -24,16 +67,6 @@ def _csv(value: str | list[str] | None) -> list[str]:
     if isinstance(value, list):
         return [item.strip() for item in value if item.strip()]
     return [item.strip() for item in value.split(",") if item.strip()]
-
-
-def _serialize_sources(sources: dict[str, str | list[str]]) -> dict[str, str]:
-    """Serialize sources for display in forms."""
-    serialized: dict[str, str] = {}
-    for source, entity_id in sources.items():
-        serialized[source] = (
-            ", ".join(entity_id) if isinstance(entity_id, list) else entity_id
-        )
-    return serialized
 
 
 def _parse_user_input(
@@ -84,10 +117,36 @@ def _parse_user_input(
     return data, errors
 
 
-def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+def _source_selector(hass: HomeAssistant, source: str) -> EntitySelector:
+    """Build an entity selector containing only compatible IAQ sources."""
+    config: EntitySelectorConfig = {
+        "multiple": source in SOURCES_LISTS,
+        "reorder": source in SOURCES_LISTS,
+    }
+
+    if device_classes := SOURCE_DEVICE_CLASSES.get(source):
+        config["filter"] = {
+            "domain": SENSOR_DOMAIN,
+            "device_class": [device_class.value for device_class in device_classes],
+        }
+    else:
+        keywords = SOURCE_KEYWORDS[source]
+        config["include_entities"] = [
+            state.entity_id
+            for state in hass.states.async_all(SENSOR_DOMAIN)
+            if any(
+                keyword in f"{state.entity_id} {state.name}".lower()
+                for keyword in keywords
+            )
+        ]
+
+    return EntitySelector(config)
+
+
+def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.Schema:
     """Return the config-flow form schema."""
     defaults = defaults or {}
-    default_sources = _serialize_sources(defaults.get(CONF_SOURCES, {}))
+    default_sources = defaults.get(CONF_SOURCES, {})
 
     return vol.Schema(
         {
@@ -102,7 +161,12 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
                 ),
             ): str,
             **{
-                vol.Optional(source, default=default_sources.get(source, "")): str
+                vol.Optional(
+                    source,
+                    default=default_sources.get(
+                        source, [] if source in SOURCES_LISTS else ""
+                    ),
+                ): _source_selector(hass, source)
                 for source in SOURCE_FIELDS
             },
         }
@@ -158,7 +222,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=_schema(user_input),
+            data_schema=_schema(self.hass, user_input),
             errors=errors,
         )
 
@@ -181,7 +245,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reconfigure",
-            data_schema=_schema(user_input or defaults),
+            data_schema=_schema(self.hass, user_input or defaults),
             errors=errors,
         )
 
@@ -221,6 +285,6 @@ class IaqcaOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_schema(user_input or defaults),
+            data_schema=_schema(self.hass, user_input or defaults),
             errors=errors,
         )
