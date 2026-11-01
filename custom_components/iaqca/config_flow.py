@@ -192,7 +192,9 @@ def _generate_entry_identity(
     return candidate, title
 
 
-def _source_selector(hass: HomeAssistant, source: str) -> EntitySelector:
+def _source_selector(
+    hass: HomeAssistant, source: str, selected: Any = None
+) -> EntitySelector:
     """Build an entity selector containing only compatible IAQ sources."""
     config: EntitySelectorConfig = {
         "multiple": source in SOURCES_LISTS,
@@ -214,6 +216,9 @@ def _source_selector(hass: HomeAssistant, source: str) -> EntitySelector:
                 for keyword in keywords
             )
         ]
+        for entity_id in _csv(selected):
+            if entity_id in hass.states and entity_id not in config["include_entities"]:
+                config["include_entities"].append(entity_id)
 
     return EntitySelector(config)
 
@@ -308,10 +313,12 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
             **{
                 vol.Optional(
                     source,
-                    default=default_sources.get(
-                        source, [] if source in SOURCES_LISTS else ""
+                    **(
+                        {"default": default_sources[source]}
+                        if default_sources.get(source)
+                        else {}
                     ),
-                ): _source_selector(hass, source)
+                ): _source_selector(hass, source, default_sources.get(source))
                 for source in SOURCE_FIELDS
             },
             vol.Optional(
@@ -330,8 +337,8 @@ def _review_schema(
         {
             vol.Optional(
                 source,
-                default=sources.get(source, [] if source in SOURCES_LISTS else ""),
-            ): _source_selector(hass, source)
+                **({"default": sources[source]} if sources.get(source) else {}),
+            ): _source_selector(hass, source, sources.get(source))
             for source in SOURCE_FIELDS
         }
     )
