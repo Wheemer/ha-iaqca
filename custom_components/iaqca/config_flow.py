@@ -324,7 +324,9 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
                         if default_sources.get(source)
                         else {}
                     ),
-                ): _source_selector(hass, source, default_sources.get(source))
+                ): vol.Maybe(
+                    _source_selector(hass, source, default_sources.get(source))
+                )
                 for source in SOURCE_FIELDS
             },
             vol.Optional(
@@ -344,7 +346,7 @@ def _review_schema(
             vol.Optional(
                 source,
                 **({"default": sources[source]} if sources.get(source) else {}),
-            ): _source_selector(hass, source, sources.get(source))
+            ): vol.Maybe(_source_selector(hass, source, sources.get(source)))
             for source in SOURCE_FIELDS
         }
     )
