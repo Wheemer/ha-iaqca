@@ -53,7 +53,8 @@
           "voc_index": "VOC index sensor",
           "hcho": "Formaldehyde sensor",
           "radon": "Radon sensor",
-          "pm": "Particulate matter sensor(s)"
+          "pm": "Particulate matter sensor(s)",
+          "name": "Name"
         },
         "data_description": {
           "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created."
@@ -90,7 +91,8 @@
           "voc_index": "VOC index sensor",
           "hcho": "Formaldehyde sensor",
           "radon": "Radon sensor",
-          "pm": "Particulate matter sensor(s)"
+          "pm": "Particulate matter sensor(s)",
+          "name": "Name"
         },
         "data_description": {
           "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created."

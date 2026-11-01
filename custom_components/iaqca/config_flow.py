@@ -310,6 +310,9 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
 
     return vol.Schema(
         {
+            vol.Required(
+                CONF_NAME, default=defaults.get(CONF_NAME, "Canadian Air Quality Index")
+            ): str,
             **{
                 vol.Optional(
                     source,
