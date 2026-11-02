@@ -114,11 +114,6 @@ def _parse_user_input(
         except vol.Invalid:
             errors[source] = "invalid_entity"
 
-        if source in (CONF_CO2, CONF_TVOC) and isinstance(raw_value, str):
-            state = hass.states.get(raw_value)
-            if _is_equivalent(raw_value, state.name if state is not None else ""):
-                errors[source] = "equivalent_source"
-
     try:
         cv.has_at_least_one_key(*SOURCES)(sources)
         check_voc_keys(sources)
@@ -227,12 +222,6 @@ def _source_selector(
             "domain": SENSOR_DOMAIN,
             "device_class": [device_class.value for device_class in device_classes],
         }
-        if source in (CONF_CO2, CONF_TVOC):
-            config["exclude_entities"] = [
-                state.entity_id
-                for state in hass.states.async_all(SENSOR_DOMAIN)
-                if _is_equivalent(state.entity_id, state.name)
-            ]
     else:
         keywords = SOURCE_KEYWORDS[source]
         config["include_entities"] = [
@@ -263,16 +252,9 @@ def _source_selector(
     return EntitySelector(config)
 
 
-def _is_equivalent(entity_id: str, name: str = "") -> bool:
-    """Identify explicitly labelled gas estimates, not measured concentrations."""
-    return "equivalent" in f"{entity_id} {name}".lower()
-
-
 def _matches_source(source: str, entity_id: str, device_class: str | None) -> bool:
     """Return whether a sensor is compatible with an IAQ source."""
     if device_classes := SOURCE_DEVICE_CLASSES.get(source):
-        if source in (CONF_CO2, CONF_TVOC) and _is_equivalent(entity_id):
-            return False
         return device_class in {item.value for item in device_classes}
     return any(keyword in entity_id.lower() for keyword in SOURCE_KEYWORDS[source])
 
@@ -326,21 +308,15 @@ def _detect_device_sources(
                 for entity_id in matching
                 if detect_index_profile(hass, entity_id) is not None
             ]
-        if source in (CONF_CO2, CONF_TVOC):
-            matching = [
-                entity_id
-                for entity_id in matching
-                if not _is_equivalent(entity_id, hass.states.get(entity_id).name)
-            ]
         if source in SOURCES_LISTS and matching:
             sources[source] = matching
         elif matching:
             sources[source] = matching[0]
 
-    if CONF_AIR_QUALITY_INDEX in sources:
-        sources.pop(CONF_TVOC, None)
+    if CONF_TVOC in sources:
+        sources.pop(CONF_AIR_QUALITY_INDEX, None)
         sources.pop(CONF_VOC_INDEX, None)
-    elif CONF_TVOC in sources:
+    elif CONF_AIR_QUALITY_INDEX in sources:
         sources.pop(CONF_VOC_INDEX, None)
     return sources
 

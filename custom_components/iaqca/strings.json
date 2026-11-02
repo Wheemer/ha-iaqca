@@ -81,7 +81,6 @@
       "invalid_sources": "Use only one of TVOC, VOC Index, or Air Quality Index.",
       "missing_sources": "Add at least one source sensor.",
       "no_compatible_sensors": "No compatible air-quality sensors were found on this device or in its area.",
-      "equivalent_source": "This is an equivalent estimate, not a measured concentration. Select the device’s air quality index instead.",
       "unknown_index_scale": "The index scale could not be identified. Select the documented scale for this sensor."
     }
   },
@@ -119,7 +118,6 @@
       "invalid_sensor": "Use iaq_level, iaq_index, or both.",
       "invalid_sources": "Use only one of TVOC, VOC Index, or Air Quality Index.",
       "missing_sources": "Add at least one source sensor.",
-      "equivalent_source": "This is an equivalent estimate, not a measured concentration. Select the device’s air quality index instead.",
       "unknown_index_scale": "The index scale could not be identified. Select the documented scale for this sensor."
     }
   },

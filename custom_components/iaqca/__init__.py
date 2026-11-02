@@ -92,6 +92,7 @@ from .index_profiles import (
     BOSCH_BSEC,
     INDEX_PROFILES,
     detect_index_profile,
+    equivalent_context,
     index_points,
 )
 
@@ -349,6 +350,7 @@ class IaqcaController:
         self._iaq_sources = 0
         self._added = False
         self._indexes = {}
+        self._scoring_groups: dict[str, list[str]] = {}
         self._source_values = {}
         self._source_status = {}
         self._source_problems = []
@@ -378,6 +380,9 @@ class IaqcaController:
                     entity_ids.extend(src)
                 else:
                     entity_ids.append(src)
+                    context = equivalent_context(self.hass, src)
+                    if context is not None and context[1] is not None:
+                        entity_ids.append(context[1])
 
             _LOGGER.debug(
                 "[%s] Setup states tracking for %s",
@@ -509,10 +514,15 @@ class IaqcaController:
             status = ", ".join(self._source_status.get(source_type, [])) or "unknown"
             for reading in self._source_values[source_type]:
                 unit = reading.get("unit") or ""
+                scoring_note = (
+                    f", scored via {reading['scoring_entity_id']} ({reading['profile']})"
+                    if reading.get("scoring_entity_id")
+                    else ""
+                )
                 rows.append(
                     f"{source_type}: {reading['value']} {unit} "
                     f"from {reading['entity_id']} "
-                    f"(index {index if index is not None else 'n/a'}, {status})"
+                    f"(index {index if index is not None else 'n/a'}, {status}{scoring_note})"
                 )
         return rows
 
@@ -535,6 +545,8 @@ class IaqcaController:
             "advisory_status": self._advisory_status if self._source_status else None,
             "sources_set": sources_set,
             "sources_used": self._iaq_sources,
+            "scoring_contributions": len(self._scoring_groups),
+            "scoring_groups": self._scoring_groups,
             "source_coverage": round(self._iaq_sources / sources_set, 3)
             if sources_set
             else 0,
@@ -580,6 +592,9 @@ class IaqcaController:
         iaq = 0
         sources = 0
         indexes = {}
+        contributions: dict[str, int] = {}
+        groups: dict[str, list[str]] = {}
+        old_groups = self._scoring_groups
         old_source_values = self._source_values
         old_source_status = self._source_status
         old_source_problems = self._source_problems
@@ -588,22 +603,61 @@ class IaqcaController:
         self._source_problems = []
         for src in self._sources:
             try:
-                # pylint: disable=unnecessary-dunder-call
-                idx = self.__getattribute__(f"_{src}_index")
+                entity_id = self._sources[src]
+                context = (
+                    equivalent_context(self.hass, entity_id)
+                    if src in (CONF_CO2, CONF_TVOC) and isinstance(entity_id, str)
+                    else None
+                )
+                idx = (
+                    self._equivalent_native_index(src, entity_id, context[1])
+                    if context and context[1]
+                    else None
+                )
+                native_used = idx is not None
+                if idx is None:
+                    idx = self.__getattribute__(f"_{src}_index")
+                group = f"estimate:{context[0]}" if context else src
+                if native_used:
+                    group = f"index:{context[1]}"
+                elif src == CONF_AIR_QUALITY_INDEX:
+                    group = f"index:{entity_id}"
+                if context:
+                    selected = self.hass.states.get(entity_id)
+                    for reading in self._source_values.get(src, []):
+                        reading.update(
+                            {
+                                "estimated": True,
+                                "selected_entity_id": entity_id,
+                                "selected_value": selected.state if selected else None,
+                                "selected_unit": selected.attributes.get(
+                                    ATTR_UNIT_OF_MEASUREMENT
+                                )
+                                if selected
+                                else None,
+                                "scoring_method": "native_index"
+                                if native_used
+                                else "concentration_proxy",
+                            }
+                        )
                 _LOGGER.debug("[%s] %s_index=%s", self._entity_id, src, idx)
                 if idx is not None:
-                    iaq += idx
                     sources += 1
                     indexes[src] = idx
+                    contributions[group] = min(contributions.get(group, idx), idx)
+                    groups.setdefault(group, []).append(src)
             except Exception:
                 _LOGGER.exception("Exception occurred")
 
+        self._scoring_groups = groups
         if sources:
-            iaq_index = int((65 * iaq) / (5 * sources))
+            iaq = sum(contributions.values())
+            iaq_index = int((65 * iaq) / (5 * len(contributions)))
             changed = (
                 iaq_index != self._iaq_index
                 or sources != self._iaq_sources
                 or indexes != self._indexes
+                or groups != old_groups
                 or self._source_values != old_source_values
                 or self._source_status != old_source_status
                 or self._source_problems != old_source_problems
@@ -642,6 +696,53 @@ class IaqcaController:
     def _has_state(state: str | None) -> bool:
         """Return True if state has any value."""
         return state is not None and state not in [STATE_UNKNOWN, STATE_UNAVAILABLE]
+
+    def _equivalent_native_index(
+        self, source: str, selected_id: str, native_id: str
+    ) -> int | None:
+        """Interpret equivalent gas outputs using their available native index."""
+        state = self.hass.states.get(native_id)
+        if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+        try:
+            value = float(state.state)
+        except (ValueError, TypeError):
+            return None
+        if not math.isfinite(value) or not 0 <= value <= 500:
+            return None
+        selected = self.hass.states.get(selected_id)
+        if selected is None:
+            return None
+        try:
+            selected_value = float(selected.state)
+        except (ValueError, TypeError):
+            return None
+        if not math.isfinite(selected_value):
+            return None
+        self._record_source_value(
+            source,
+            selected_id,
+            selected_value,
+            selected.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+        )
+        self._source_values[source][0].update(
+            {
+                "profile": BOSCH_BSEC,
+                "scoring_entity_id": native_id,
+                "scoring_value": value,
+                "scoring_unit": state.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+            }
+        )
+        self._source_status[source] = [
+            "good"
+            if value <= 100
+            else "acceptable"
+            if value <= 150
+            else "elevated"
+            if value <= 200
+            else "high"
+        ]
+        return index_points(value, BOSCH_BSEC)
 
     def _record_source_value(
         self,

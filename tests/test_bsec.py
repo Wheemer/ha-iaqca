@@ -68,8 +68,8 @@ def test_bsec_mutually_exclusive(other):
         check_voc_keys({"air_quality_index": "sensor.iaq", other: "sensor.voc"})
 
 
-async def test_equivalent_sources_rejected(hass):
-    """Tell users to choose the Bosch index instead of equivalent estimates."""
+async def test_equivalent_sources_accepted(hass):
+    """Equivalent estimates stay selectable and save without validation blocks."""
     hass.states.async_set("sensor.co2_equivalent", 1500)
     hass.states.async_set("sensor.breath_voc_equivalent", 4.8)
     _, errors = _parse_user_input(
@@ -80,12 +80,12 @@ async def test_equivalent_sources_rejected(hass):
         },
         {"object_id": "test", "name": "Test"},
     )
-    assert errors["co2"] == "equivalent_source"
-    assert errors["tvoc"] == "equivalent_source"
+    assert not errors
 
 
-async def test_bsec_discovery(hass):
-    """Detect Spike-like BSEC sources without selecting derived gas estimates."""
+@pytest.mark.parametrize("native_state", [160, "unavailable"])
+async def test_bsec_discovery(hass, native_state):
+    """Keep estimates discoverable and score correlated outputs once."""
     config_entry = MockConfigEntry(domain="esphome")
     config_entry.add_to_hass(hass)
     device = dr.async_get(hass).async_get_or_create(
@@ -122,13 +122,69 @@ async def test_bsec_discovery(hass):
             },
         )
     assert _detect_device_sources(hass, device.id) == {
-        "air_quality_index": "sensor.spikes_iaq",
+        "co2": "sensor.spikes_co2_equivalent",
+        "tvoc": "sensor.spikes_breath_voc_equivalent",
         "temperature": "sensor.spikes_temperature",
         "humidity": "sensor.spikes_humidity",
     }
     selector = _source_selector(hass, "tvoc")
-    assert "sensor.spikes_breath_voc_equivalent" in selector.config["exclude_entities"]
+    assert not selector.config.get("exclude_entities")
     assert (
         "sensor.spikes_iaq"
         in _source_selector(hass, "air_quality_index").config["include_entities"]
     )
+    for name, value in {
+        "iaq": native_state,
+        "co2_equivalent": 1500,
+        "breath_voc_equivalent": 4.8,
+        "temperature": 20,
+        "humidity": 50,
+    }.items():
+        entity_id = f"sensor.spikes_{name}"
+        hass.states.async_set(
+            entity_id, value, dict(hass.states.get(entity_id).attributes)
+        )
+    controller = IaqcaController(
+        hass, "test", "Test", _detect_device_sources(hass, device.id)
+    )
+    controller.update()
+    summary = controller.state_attributes["calculation_summary"]
+    assert summary["sources_used"] == 4
+    assert summary["scoring_contributions"] == 3
+    assert controller.iaq_index == (52 if native_state == 160 else 47)
+    reading = controller.state_attributes["source_values"]["tvoc"][0]
+    assert reading["estimated"] is True
+    assert reading["selected_entity_id"] == "sensor.spikes_breath_voc_equivalent"
+    assert reading["entity_id"] == "sensor.spikes_breath_voc_equivalent"
+    if native_state == 160:
+        assert reading["scoring_entity_id"] == "sensor.spikes_iaq"
+        assert reading["scoring_value"] == 160
+    assert reading["scoring_method"] == (
+        "native_index" if native_state == 160 else "concentration_proxy"
+    )
+
+    hass.states.async_set("sensor.actual_co2", 1400, {"unit_of_measurement": "ppm"})
+    measured = IaqcaController(
+        hass,
+        "measured",
+        "Measured",
+        {
+            "co2": "sensor.actual_co2",
+            "tvoc": "sensor.spikes_breath_voc_equivalent",
+        },
+    )
+    measured.update()
+    assert (
+        measured.state_attributes["calculation_summary"]["scoring_contributions"] == 2
+    )
+    assert (
+        measured.state_attributes["source_values"]["co2"][0]["entity_id"]
+        == "sensor.actual_co2"
+    )
+
+    if native_state == 160:
+        controller.async_added_to_hass()
+        hass.states.async_set("sensor.spikes_iaq", 50, {"unit_of_measurement": "IAQ"})
+        await hass.async_block_till_done()
+        assert controller.iaq_index == 65
+        controller.async_shutdown()

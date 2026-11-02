@@ -68,3 +68,24 @@ def index_points(value: float, profile: str) -> int:
         SENSIRION_VOC: (50, 115, 180, 260),
     }[profile]
     return 5 - sum(value > boundary for boundary in boundaries)
+
+
+def equivalent_context(
+    hass: HomeAssistant, entity_id: str
+) -> tuple[str, str | None] | None:
+    """Identify a labelled estimate and its same-device native index, if known."""
+    registry = er.async_get(hass)
+    entry = registry.async_get(entity_id)
+    state = hass.states.get(entity_id)
+    identity = f"{entity_id} {state.name if state else ''} {entry.original_name if entry else ''}".lower()
+    if "equivalent" not in identity:
+        return None
+    if entry is None or entry.device_id is None:
+        return (entity_id, None)
+    native = sorted(
+        item.entity_id
+        for item in er.async_entries_for_device(registry, entry.device_id)
+        if detect_index_profile(hass, item.entity_id) == BOSCH_BSEC
+    )
+    # Multiple different index outputs are ambiguous; retain proxy scoring.
+    return (entry.device_id, native[0] if len(native) == 1 else None)

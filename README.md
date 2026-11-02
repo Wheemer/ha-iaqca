@@ -48,9 +48,16 @@ these are not manufacturer health classifications. The resulting 1-65
 combined score remains an IAQCA score, not a Bosch or Sensirion index.
 
 Use only one of Air Quality Index, TVOC, and VOC Index in an entry.
-Explicitly labelled CO2-equivalent and breath-VOC-equivalent estimates
-are excluded from concentration selectors and automatic discovery.
-Actual independently measured CO2 can still be combined with an index.
+CO2-equivalent and breath-VOC-equivalent estimates remain selectable.
+The backend recognizes explicitly labelled estimates and, when available,
+interprets them through a recognized native Bosch BSEC index on the same
+device. Related estimates share one gas contribution instead of counting
+the same signal twice. Without a usable native index, existing operational
+proxy scoring remains available and is labelled in source diagnostics;
+related same-device estimates use their worst score as one contribution.
+Diagnostics retain selected readings, the effective scoring source and
+profile, and the contribution groups. Independently measured CO2 is not
+grouped with estimated gas signals.
 Existing entries are not silently remapped or removed.
 
 References: [ESPHome BSEC output definitions and bands](https://esphome.io/components/sensor/bme680_bsec/),
