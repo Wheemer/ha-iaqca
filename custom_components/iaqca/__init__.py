@@ -6,6 +6,7 @@ https://github.com/Wheemer/ha-iaqca
 """
 
 import logging
+import math
 from collections.abc import Callable
 from typing import Any, Final
 
@@ -37,6 +38,8 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.unit_conversion import TemperatureConverter
 
 from .const import (
+    CONF_INDEX_PROFILE,
+    CONF_AIR_QUALITY_INDEX,
     ATTR_ACTIVE_ISSUES,
     ATTR_ADVISORY_STATUS,
     ATTR_ADVISORY_PROFILE,
@@ -84,6 +87,15 @@ from .const import (
     UNIT_UGM3,
 )
 
+from .index_profiles import (
+    AUTO,
+    BOSCH_BSEC,
+    INDEX_PROFILES,
+    detect_index_profile,
+    equivalent_context,
+    index_points,
+)
+
 _LOGGER: Final = logging.getLogger(__name__)
 
 DATA_CONTROLLERS: Final = "controllers"
@@ -100,8 +112,8 @@ STATUS_SEVERITY: Final = {
 
 
 def check_voc_keys(conf: ConfigType) -> ConfigType:
-    """Ensure CONF_TVOC, CONF_VOC_INDEX or none of them are provided."""
-    keys: Final = [CONF_TVOC, CONF_VOC_INDEX]
+    """Allow at most one gas index or VOC concentration source."""
+    keys: Final = [CONF_TVOC, CONF_VOC_INDEX, CONF_AIR_QUALITY_INDEX]
     count = sum(param in conf for param in keys)
     if count > 1:
         raise vol.Invalid(
@@ -118,6 +130,7 @@ SOURCES: Final = [
     CONF_NO2,
     CONF_TVOC,
     CONF_VOC_INDEX,
+    CONF_AIR_QUALITY_INDEX,
     CONF_HCHO,
     CONF_RADON,
     CONF_PM,
@@ -141,6 +154,7 @@ IAQ_SCHEMA: Final = vol.Schema(
         vol.Optional(CONF_NAME): cv.string,
         vol.Required(CONF_SOURCES): SOURCES_SCHEMA,
         vol.Optional(CONF_SENSORS): vol.All(cv.ensure_list, [vol.In(SENSORS)]),
+        vol.Optional(CONF_INDEX_PROFILE): vol.In(INDEX_PROFILES),
     }
 )
 
@@ -189,6 +203,7 @@ def _yaml_entry_data(object_id: str, cfg: ConfigType) -> dict[str, Any]:
         CONF_NAME: cfg.get(CONF_NAME, _deslugify(object_id)),
         CONF_SOURCES: cfg[CONF_SOURCES],
         CONF_SENSORS: sensors,
+        CONF_INDEX_PROFILE: cfg.get(CONF_INDEX_PROFILE, AUTO),
     }
 
 
@@ -277,7 +292,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not sensors:
         sensors = list(SENSORS.keys())
 
-    controller = IaqcaController(hass, object_id, name, sources)
+    controller = IaqcaController(
+        hass, object_id, name, sources, entry.data.get(CONF_INDEX_PROFILE, AUTO)
+    )
     data[DATA_CONTROLLERS][object_id] = controller
     data[DATA_ENTRY_CONTROLLERS][entry.entry_id] = {
         CONF_OBJECT_ID: object_id,
@@ -320,17 +337,20 @@ class IaqcaController:
         entity_id: str,
         name: str,
         sources: dict[str, str | list[str]],
+        index_profile: str = AUTO,
     ) -> None:
         """Initialize controller."""
         self.hass = hass
         self._entity_id = entity_id
         self._name = name
         self._sources = sources
+        self._index_profile = index_profile
 
         self._iaq_index = None
         self._iaq_sources = 0
         self._added = False
         self._indexes = {}
+        self._scoring_groups: dict[str, list[str]] = {}
         self._source_values = {}
         self._source_status = {}
         self._source_problems = []
@@ -360,6 +380,9 @@ class IaqcaController:
                     entity_ids.extend(src)
                 else:
                     entity_ids.append(src)
+                    context = equivalent_context(self.hass, src)
+                    if context is not None and context[1] is not None:
+                        entity_ids.append(context[1])
 
             _LOGGER.debug(
                 "[%s] Setup states tracking for %s",
@@ -491,10 +514,15 @@ class IaqcaController:
             status = ", ".join(self._source_status.get(source_type, [])) or "unknown"
             for reading in self._source_values[source_type]:
                 unit = reading.get("unit") or ""
+                scoring_note = (
+                    f", scored via {reading['scoring_entity_id']} ({reading['profile']})"
+                    if reading.get("scoring_entity_id")
+                    else ""
+                )
                 rows.append(
                     f"{source_type}: {reading['value']} {unit} "
                     f"from {reading['entity_id']} "
-                    f"(index {index if index is not None else 'n/a'}, {status})"
+                    f"(index {index if index is not None else 'n/a'}, {status}{scoring_note})"
                 )
         return rows
 
@@ -517,6 +545,8 @@ class IaqcaController:
             "advisory_status": self._advisory_status if self._source_status else None,
             "sources_set": sources_set,
             "sources_used": self._iaq_sources,
+            "scoring_contributions": len(self._scoring_groups),
+            "scoring_groups": self._scoring_groups,
             "source_coverage": round(self._iaq_sources / sources_set, 3)
             if sources_set
             else 0,
@@ -562,6 +592,9 @@ class IaqcaController:
         iaq = 0
         sources = 0
         indexes = {}
+        contributions: dict[str, int] = {}
+        groups: dict[str, list[str]] = {}
+        old_groups = self._scoring_groups
         old_source_values = self._source_values
         old_source_status = self._source_status
         old_source_problems = self._source_problems
@@ -570,22 +603,61 @@ class IaqcaController:
         self._source_problems = []
         for src in self._sources:
             try:
-                # pylint: disable=unnecessary-dunder-call
-                idx = self.__getattribute__(f"_{src}_index")
+                entity_id = self._sources[src]
+                context = (
+                    equivalent_context(self.hass, entity_id)
+                    if src in (CONF_CO2, CONF_TVOC) and isinstance(entity_id, str)
+                    else None
+                )
+                idx = (
+                    self._equivalent_native_index(src, entity_id, context[1])
+                    if context and context[1]
+                    else None
+                )
+                native_used = idx is not None
+                if idx is None:
+                    idx = self.__getattribute__(f"_{src}_index")
+                group = f"estimate:{context[0]}" if context else src
+                if native_used:
+                    group = f"index:{context[1]}"
+                elif src == CONF_AIR_QUALITY_INDEX:
+                    group = f"index:{entity_id}"
+                if context:
+                    selected = self.hass.states.get(entity_id)
+                    for reading in self._source_values.get(src, []):
+                        reading.update(
+                            {
+                                "estimated": True,
+                                "selected_entity_id": entity_id,
+                                "selected_value": selected.state if selected else None,
+                                "selected_unit": selected.attributes.get(
+                                    ATTR_UNIT_OF_MEASUREMENT
+                                )
+                                if selected
+                                else None,
+                                "scoring_method": "native_index"
+                                if native_used
+                                else "concentration_proxy",
+                            }
+                        )
                 _LOGGER.debug("[%s] %s_index=%s", self._entity_id, src, idx)
                 if idx is not None:
-                    iaq += idx
                     sources += 1
                     indexes[src] = idx
+                    contributions[group] = min(contributions.get(group, idx), idx)
+                    groups.setdefault(group, []).append(src)
             except Exception:
                 _LOGGER.exception("Exception occurred")
 
+        self._scoring_groups = groups
         if sources:
-            iaq_index = int((65 * iaq) / (5 * sources))
+            iaq = sum(contributions.values())
+            iaq_index = int((65 * iaq) / (5 * len(contributions)))
             changed = (
                 iaq_index != self._iaq_index
                 or sources != self._iaq_sources
                 or indexes != self._indexes
+                or groups != old_groups
                 or self._source_values != old_source_values
                 or self._source_status != old_source_status
                 or self._source_problems != old_source_problems
@@ -614,7 +686,6 @@ class IaqcaController:
         self._indexes = {}
         self._source_values = {}
         self._source_status = {}
-        self._source_problems = []
         self._iaq_index = None
         self._iaq_sources = 0
         if changed:
@@ -625,6 +696,53 @@ class IaqcaController:
     def _has_state(state: str | None) -> bool:
         """Return True if state has any value."""
         return state is not None and state not in [STATE_UNKNOWN, STATE_UNAVAILABLE]
+
+    def _equivalent_native_index(
+        self, source: str, selected_id: str, native_id: str
+    ) -> int | None:
+        """Interpret equivalent gas outputs using their available native index."""
+        state = self.hass.states.get(native_id)
+        if state is None or state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+        try:
+            value = float(state.state)
+        except (ValueError, TypeError):
+            return None
+        if not math.isfinite(value) or not 0 <= value <= 500:
+            return None
+        selected = self.hass.states.get(selected_id)
+        if selected is None:
+            return None
+        try:
+            selected_value = float(selected.state)
+        except (ValueError, TypeError):
+            return None
+        if not math.isfinite(selected_value):
+            return None
+        self._record_source_value(
+            source,
+            selected_id,
+            selected_value,
+            selected.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+        )
+        self._source_values[source][0].update(
+            {
+                "profile": BOSCH_BSEC,
+                "scoring_entity_id": native_id,
+                "scoring_value": value,
+                "scoring_unit": state.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+            }
+        )
+        self._source_status[source] = [
+            "good"
+            if value <= 100
+            else "acceptable"
+            if value <= 150
+            else "elevated"
+            if value <= 200
+            else "high"
+        ]
+        return index_points(value, BOSCH_BSEC)
 
     def _record_source_value(
         self,
@@ -724,6 +842,15 @@ class IaqcaController:
                 status = "acceptable"
             else:
                 status = "out_of_range"
+        elif source_type == CONF_AIR_QUALITY_INDEX:
+            if value <= 100:
+                status = "good"
+            elif value <= 150:
+                status = "acceptable"
+            elif value <= 200:
+                status = "elevated"
+            else:
+                status = "high"
         elif source_type == CONF_VOC_INDEX:
             if value <= 50:
                 status = "good"
@@ -953,6 +1080,52 @@ class IaqcaController:
         elif value <= 1.0:  # mg/m³
             index = 2
         return index
+
+    @property
+    def _air_quality_index_index(self) -> int | None:
+        """Score a known scale, refusing ambiguous automatic detection."""
+        entity_id = self._sources.get(CONF_AIR_QUALITY_INDEX)
+        if entity_id is None:
+            return None
+        profile = self._index_profile
+        if profile == AUTO:
+            profile = detect_index_profile(self.hass, entity_id)
+        if profile not in INDEX_PROFILES or profile == AUTO:
+            self._record_source_problem(
+                CONF_AIR_QUALITY_INDEX, entity_id, "unknown_index_scale"
+            )
+            return None
+        entity = self.hass.states.get(entity_id)
+        if entity is not None and entity.attributes.get(
+            ATTR_UNIT_OF_MEASUREMENT
+        ) not in (None, "", "IAQ", "VOC Index", "VOC index"):
+            self._record_source_problem(
+                CONF_AIR_QUALITY_INDEX, entity_id, "invalid_unit"
+            )
+            return None
+        value = self._get_number_state(entity_id, source_type=CONF_AIR_QUALITY_INDEX)
+        if value is None:
+            return None
+        minimum = 0 if profile == BOSCH_BSEC else 1
+        if not math.isfinite(value) or not minimum <= value <= 500:
+            self._source_values.pop(CONF_AIR_QUALITY_INDEX, None)
+            self._source_status.pop(CONF_AIR_QUALITY_INDEX, None)
+            self._record_source_problem(
+                CONF_AIR_QUALITY_INDEX, entity_id, "out_of_range"
+            )
+            return None
+        self._source_values[CONF_AIR_QUALITY_INDEX][0]["profile"] = profile
+        if profile != BOSCH_BSEC:
+            self._source_status[CONF_AIR_QUALITY_INDEX] = [
+                "good"
+                if value <= 50
+                else "acceptable"
+                if value <= 115
+                else "elevated"
+                if value <= 180
+                else "high"
+            ]
+        return index_points(value, profile)
 
     @property
     def _voc_index_index(self) -> int | None:

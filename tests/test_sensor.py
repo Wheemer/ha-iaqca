@@ -47,6 +47,8 @@ async def test_entity_initialization(hass: HomeAssistant):
             "sources_set": 1,
             "sources_used": 0,
             "source_coverage": 0,
+            "scoring_contributions": 0,
+            "scoring_groups": {},
             "available_sources": [],
             "unavailable_sources": [""],
             "worst_source_index": None,

@@ -21,11 +21,15 @@ from homeassistant.helpers.selector import (
     DeviceSelector,
     EntitySelector,
     EntitySelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
 )
 from homeassistant.util import slugify
 
 from . import SOURCES, SOURCES_LISTS, check_voc_keys
 from .const import (
+    CONF_INDEX_PROFILE,
+    CONF_AIR_QUALITY_INDEX,
     CONF_CO,
     CONF_CO2,
     CONF_HCHO,
@@ -43,6 +47,8 @@ from .const import (
     SENSOR_LEVEL,
     SENSORS,
 )
+
+from .index_profiles import AUTO, INDEX_PROFILES, detect_index_profile
 
 SOURCE_FIELDS: Final = [*SOURCES]
 CONF_CREATE_INDEX: Final = "create_index"
@@ -70,6 +76,7 @@ SOURCE_DEVICE_CLASSES: Final = {
 # Home Assistant does not define device classes for formaldehyde or VOC index.
 # Restrict those selectors to entities whose ID or name explicitly identifies them.
 SOURCE_KEYWORDS: Final = {
+    CONF_AIR_QUALITY_INDEX: ("air_quality_index", "bsec iaq", "bosch iaq"),
     CONF_VOC_INDEX: ("voc_index", "voc index"),
     CONF_HCHO: ("hcho", "formaldehyde"),
 }
@@ -139,6 +146,9 @@ def _parse_user_input(
         object_id, generated_name = _generate_entry_identity(hass, sources)
 
     data = {
+        CONF_INDEX_PROFILE: user_input.get(
+            CONF_INDEX_PROFILE, defaults.get(CONF_INDEX_PROFILE, AUTO)
+        ),
         CONF_OBJECT_ID: object_id,
         CONF_NAME: user_input.get(CONF_NAME)
         or defaults.get(CONF_NAME)
@@ -146,6 +156,12 @@ def _parse_user_input(
         CONF_SOURCES: sources,
         CONF_SENSORS: sensor_ids,
     }
+    profile = data[CONF_INDEX_PROFILE]
+    if profile not in INDEX_PROFILES:
+        errors[CONF_INDEX_PROFILE] = "unknown_index_scale"
+    elif (index_entity := sources.get(CONF_AIR_QUALITY_INDEX)) and profile == AUTO:
+        if detect_index_profile(hass, index_entity) is None:
+            errors[CONF_INDEX_PROFILE] = "unknown_index_scale"
     return data, errors
 
 
@@ -215,6 +231,16 @@ def _source_selector(
                 keyword in f"{state.entity_id} {state.name}".lower()
                 for keyword in keywords
             )
+            or (
+                source == CONF_AIR_QUALITY_INDEX
+                and not state.attributes.get("scoring_profile")
+                and (
+                    detect_index_profile(hass, state.entity_id) is not None
+                    or state.attributes.get("unit_of_measurement")
+                    in ("IAQ", "VOC Index", "VOC index")
+                    or state.attributes.get("device_class") == "aqi"
+                )
+            )
         ]
         for entity_id in _csv(selected):
             if (
@@ -271,13 +297,26 @@ def _detect_device_sources(
             entity_id
             for _, entity_id, device_class in candidates
             if _matches_source(source, entity_id, device_class)
+            or (
+                source == CONF_AIR_QUALITY_INDEX
+                and detect_index_profile(hass, entity_id) is not None
+            )
         ]
+        if source == CONF_AIR_QUALITY_INDEX:
+            matching = [
+                entity_id
+                for entity_id in matching
+                if detect_index_profile(hass, entity_id) is not None
+            ]
         if source in SOURCES_LISTS and matching:
             sources[source] = matching
         elif matching:
             sources[source] = matching[0]
 
     if CONF_TVOC in sources:
+        sources.pop(CONF_AIR_QUALITY_INDEX, None)
+        sources.pop(CONF_VOC_INDEX, None)
+    elif CONF_AIR_QUALITY_INDEX in sources:
         sources.pop(CONF_VOC_INDEX, None)
     return sources
 
@@ -330,6 +369,9 @@ def _schema(hass: HomeAssistant, defaults: dict[str, Any] | None = None) -> vol.
                 for source in SOURCE_FIELDS
             },
             vol.Optional(
+                CONF_INDEX_PROFILE, default=defaults.get(CONF_INDEX_PROFILE, AUTO)
+            ): _index_profile_selector(),
+            vol.Optional(
                 CONF_CREATE_INDEX,
                 default=SENSOR_INDEX in defaults.get(CONF_SENSORS, SENSORS),
             ): BooleanSelector(),
@@ -341,14 +383,24 @@ def _review_schema(
     hass: HomeAssistant, sources: dict[str, str | list[str]]
 ) -> vol.Schema:
     """Return editable source selectors prefilled with detected values."""
-    return vol.Schema(
-        {
-            vol.Optional(
-                source,
-                **({"default": sources[source]} if sources.get(source) else {}),
-            ): vol.Maybe(_source_selector(hass, source, sources.get(source)))
-            for source in SOURCE_FIELDS
-        }
+    fields = {
+        vol.Optional(
+            source,
+            **({"default": sources[source]} if sources.get(source) else {}),
+        ): vol.Maybe(_source_selector(hass, source, sources.get(source)))
+        for source in SOURCE_FIELDS
+    }
+    fields[vol.Optional(CONF_INDEX_PROFILE, default=AUTO)] = _index_profile_selector()
+    return vol.Schema(fields)
+
+
+def _index_profile_selector() -> SelectSelector:
+    """Offer scale selection only as a fallback for incomplete metadata."""
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=list(INDEX_PROFILES),
+            translation_key="index_profile",
+        )
     )
 
 
@@ -365,6 +417,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_OBJECT_ID: user_input[CONF_OBJECT_ID],
                 CONF_NAME: user_input.get(CONF_NAME),
                 CONF_SENSORS: user_input.get(CONF_SENSORS),
+                CONF_INDEX_PROFILE: user_input.get(CONF_INDEX_PROFILE, AUTO),
             }
         else:
             form_input = user_input
@@ -422,6 +475,7 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     for source in SOURCE_FIELDS
                     if user_input.get(source)
                 }
+                self._index_profile = user_input.get(CONF_INDEX_PROFILE, AUTO)
                 return await self.async_step_confirm()
 
         return self.async_show_form(
@@ -438,7 +492,11 @@ class IaqcaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Confirm generated name and optional numeric sensor."""
         if user_input is not None:
-            form_input = {**self._detected_sources, **user_input}
+            form_input = {
+                **self._detected_sources,
+                **user_input,
+                CONF_INDEX_PROFILE: self._index_profile,
+            }
             data, errors = _parse_user_input(self.hass, form_input)
             if not errors:
                 data[CONF_SOURCE_DEVICE] = self._source_device_id

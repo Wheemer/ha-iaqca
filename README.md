@@ -30,6 +30,39 @@ This is a maintained fork of [Limych/ha-iaquk](https://github.com/Limych/ha-iaqu
   <strong style="color: #41bdf5;">Canadian guidance:</strong> CO2, CO, NO2, formaldehyde, and radon use Canadian residential guidance. PM2.5, generic TVOC, VOC Index, temperature, and humidity remain practical live home signals for source detection, comfort, and ventilation.
 </div>
 
+## Air Quality Index Sources
+
+The **Air quality index sensor** input supports Bosch BSEC IAQ (including
+BME680/BME688-based devices) and Sensirion VOC Index outputs (including
+SGP40/SGP41-based devices). It identifies the scale from sensor identity,
+device metadata, and known sibling outputs, not the current numeric value.
+Leave **Index scale** on **Automatic** unless the device exposes insufficient
+metadata; then select its documented scale explicitly. Other index scales
+require a supported profile and are not inferred from a shared 0-500 range.
+
+Bosch's bands map to IAQCA points as follows: 0-50 = 5, over 50-100 = 4,
+over 100-150 = 3, over 150-200 = 2, over 200-500 = 1. The three most
+polluted Bosch bands share the lowest IAQCA point. Sensirion uses the
+integration's existing operational boundaries of 50, 115, 180, and 260;
+these are not manufacturer health classifications. The resulting 1-65
+combined score remains an IAQCA score, not a Bosch or Sensirion index.
+
+Use only one of Air Quality Index, TVOC, and VOC Index in an entry.
+CO2-equivalent and breath-VOC-equivalent estimates remain selectable.
+The backend recognizes explicitly labelled estimates and, when available,
+interprets them through a recognized native Bosch BSEC index on the same
+device. Related estimates share one gas contribution instead of counting
+the same signal twice. Without a usable native index, existing operational
+proxy scoring remains available and is labelled in source diagnostics;
+related same-device estimates use their worst score as one contribution.
+Diagnostics retain selected readings, the effective scoring source and
+profile, and the contribution groups. Independently measured CO2 is not
+grouped with estimated gas signals.
+Existing entries are not silently remapped or removed.
+
+References: [ESPHome BSEC output definitions and bands](https://esphome.io/components/sensor/bme680_bsec/),
+[Sensirion SGP41 datasheet](https://admin.sensirion.com/media/documents/5FE8673C/61E96F50/Sensirion_Gas_Sensors_Datasheet_SGP41.pdf).
+
 ## Installation
 
 ### HACS

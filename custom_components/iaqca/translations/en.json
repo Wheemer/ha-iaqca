@@ -32,11 +32,15 @@
           "voc_index": "VOC index sensor",
           "hcho": "Formaldehyde sensor",
           "radon": "Radon sensor",
-          "pm": "Particulate matter sensor(s)"
+          "pm": "Particulate matter sensor(s)",
+          "air_quality_index": "Air quality index sensor",
+          "index_profile": "Index scale"
         },
         "data_description": {
           "co": "Multiple sensors are allowed; the highest reading is used.",
-          "pm": "Multiple sensors are allowed; their values are combined for scoring."
+          "pm": "Multiple sensors are allowed; their values are combined for scoring.",
+          "air_quality_index": "Uses a supported sensor index directly, instead of TVOC or VOC index.",
+          "index_profile": "Automatically identifies supported scales. Choose a scale only when device metadata is insufficient."
         }
       },
       "reconfigure": {
@@ -54,10 +58,14 @@
           "hcho": "Formaldehyde sensor",
           "radon": "Radon sensor",
           "pm": "Particulate matter sensor(s)",
-          "name": "Name"
+          "name": "Name",
+          "air_quality_index": "Air quality index sensor",
+          "index_profile": "Index scale"
         },
         "data_description": {
-          "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created."
+          "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created.",
+          "air_quality_index": "Uses a supported sensor index directly, instead of TVOC or VOC index.",
+          "index_profile": "Automatically identifies supported scales. Choose a scale only when device metadata is insufficient."
         }
       }
     },
@@ -70,9 +78,10 @@
       "invalid_entity": "Enter a valid Home Assistant entity ID.",
       "invalid_object_id": "Enter a valid slug-style object ID.",
       "invalid_sensor": "Use iaq_level, iaq_index, or both.",
-      "invalid_sources": "Use either TVOC or VOC Index, not both.",
+      "invalid_sources": "Use only one of TVOC, VOC Index, or Air Quality Index.",
       "missing_sources": "Add at least one source sensor.",
-      "no_compatible_sensors": "No compatible air-quality sensors were found on this device or in its area."
+      "no_compatible_sensors": "No compatible air-quality sensors were found on this device or in its area.",
+      "unknown_index_scale": "The index scale could not be identified. Select the documented scale for this sensor."
     }
   },
   "options": {
@@ -92,10 +101,14 @@
           "hcho": "Formaldehyde sensor",
           "radon": "Radon sensor",
           "pm": "Particulate matter sensor(s)",
-          "name": "Name"
+          "name": "Name",
+          "air_quality_index": "Air quality index sensor",
+          "index_profile": "Index scale"
         },
         "data_description": {
-          "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created."
+          "create_index": "Adds the 1-65 Canadian Air Quality Index number. The Air Quality Level sensor is always created.",
+          "air_quality_index": "Uses a supported sensor index directly, instead of TVOC or VOC index.",
+          "index_profile": "Automatically identifies supported scales. Choose a scale only when device metadata is insufficient."
         }
       }
     },
@@ -103,8 +116,9 @@
       "invalid_entity": "Enter a valid Home Assistant entity ID.",
       "invalid_object_id": "Enter a valid slug-style object ID.",
       "invalid_sensor": "Use iaq_level, iaq_index, or both.",
-      "invalid_sources": "Use either TVOC or VOC Index, not both.",
-      "missing_sources": "Add at least one source sensor."
+      "invalid_sources": "Use only one of TVOC, VOC Index, or Air Quality Index.",
+      "missing_sources": "Add at least one source sensor.",
+      "unknown_index_scale": "The index scale could not be identified. Select the documented scale for this sensor."
     }
   },
   "entity": {
@@ -114,6 +128,15 @@
       },
       "iaq_level": {
         "name": "Canadian Air Quality Level"
+      }
+    }
+  },
+  "selector": {
+    "index_profile": {
+      "options": {
+        "auto": "Automatic",
+        "bosch_bsec": "Bosch BSEC IAQ (0-500)",
+        "sensirion_voc": "Sensirion VOC Index (1-500)"
       }
     }
   }
